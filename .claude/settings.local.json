@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//home/roukmoute/workspace/github/YggdrasilCloud/core/**)",
+      "Bash(tree:*)",
+      "Bash(docker compose:*)",
+      "Read(//home/roukmoute/workspace/github/YggDrive/docker/**)",
+      "Bash(curl:*)",
+      "Read(//home/roukmoute/workspace/github/YggdrasilCloud/docker/**)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh run list:*)",
+      "Bash(docker build:*)",
+      "Bash(docker push:*)",
+      "Bash(docker pull:*)",
+      "Bash(docker tag:*)",
+      "Bash(git reset:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
