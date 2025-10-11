@@ -7,6 +7,7 @@ namespace App\Photo\UserInterface\Http\Controller;
 use App\Photo\Domain\Model\PhotoId;
 use App\Photo\Infrastructure\Persistence\Doctrine\Repository\DoctrinePhotoRepository;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -19,7 +20,7 @@ final readonly class GetPhotoThumbnailController
     }
 
     #[Route('/api/photos/{photoId}/thumbnail', name: 'get_photo_thumbnail', methods: ['GET', 'HEAD'])]
-    public function __invoke(string $photoId): Response
+    public function __invoke(string $photoId, Request $request): Response
     {
         try {
             $photo = $this->photoRepository->findById(PhotoId::fromString($photoId));
@@ -44,9 +45,18 @@ final readonly class GetPhotoThumbnailController
             $response = new BinaryFileResponse($fullPath);
             // Les thumbnails sont toujours des JPEG
             $response->headers->set('Content-Type', 'image/jpeg');
+
             // Cache pour 1 an (les thumbnails ne changent jamais)
+            $response->setPublic();
             $response->setMaxAge(31536000);
             $response->setSharedMaxAge(31536000);
+
+            // Enable conditional cache with ETag and Last-Modified
+            $response->setAutoEtag();
+            $response->setAutoLastModified();
+
+            // Check if response is not modified (sends 304 if client has fresh cache)
+            $response->isNotModified($request);
 
             return $response;
         } catch (\InvalidArgumentException $e) {

@@ -7,6 +7,7 @@ namespace App\Photo\UserInterface\Http\Controller;
 use App\Photo\Domain\Model\PhotoId;
 use App\Photo\Infrastructure\Persistence\Doctrine\Repository\DoctrinePhotoRepository;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -19,7 +20,7 @@ final readonly class GetPhotoFileController
     }
 
     #[Route('/api/photos/{photoId}/file', name: 'get_photo_file', methods: ['GET', 'HEAD'])]
-    public function __invoke(string $photoId): Response
+    public function __invoke(string $photoId, Request $request): Response
     {
         try {
             $photo = $this->photoRepository->findById(PhotoId::fromString($photoId));
@@ -38,6 +39,15 @@ final readonly class GetPhotoFileController
 
             $response = new BinaryFileResponse($fullPath);
             $response->headers->set('Content-Type', $photo->storedFile()->mimeType());
+
+            // Enable conditional cache with ETag and Last-Modified
+            $response->setAutoEtag();
+            $response->setAutoLastModified();
+            $response->setPublic();
+            $response->setMaxAge(3600); // Cache for 1 hour
+
+            // Check if response is not modified (sends 304 if client has fresh cache)
+            $response->isNotModified($request);
 
             return $response;
         } catch (\InvalidArgumentException $e) {
