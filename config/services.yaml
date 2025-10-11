@@ -41,16 +41,6 @@ services:
             $maxFileSize: '%photo.max_file_size%'
             $allowedMimeTypes: '%photo.allowed_mime_types%'
 
-    # Photo Bounded Context - Photo file controller
-    App\Photo\UserInterface\Http\Controller\GetPhotoFileController:
-        arguments:
-            $storageBasePath: '%photo.storage_path%'
-
-    # Photo Bounded Context - Photo thumbnail controller
-    App\Photo\UserInterface\Http\Controller\GetPhotoThumbnailController:
-        arguments:
-            $storageBasePath: '%photo.storage_path%'
-
     # Photo Bounded Context - Thumbnail generator
     App\Photo\Domain\Service\ThumbnailGenerator:
         arguments:
