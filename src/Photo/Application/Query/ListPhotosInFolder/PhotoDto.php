@@ -14,6 +14,7 @@ final readonly class PhotoDto
         public int $sizeInBytes,
         public string $uploadedAt,
         public string $fileUrl,
+        public ?string $thumbnailUrl,
     ) {
     }
 }

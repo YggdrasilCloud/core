@@ -41,6 +41,9 @@ final readonly class ListPhotosInFolderHandler
                 $photo->storedFile()->sizeInBytes(),
                 $photo->uploadedAt()->format(\DateTimeInterface::ATOM),
                 '/api/photos/' . $photo->id()->toString() . '/file',
+                $photo->storedFile()->thumbnailPath() !== null
+                    ? '/api/photos/' . $photo->id()->toString() . '/thumbnail'
+                    : null,
             ),
             $photos,
         );
