@@ -1,0 +1,78 @@
+deptrac:
+  paths:
+    - ./src
+
+  exclude_files:
+    - '#.*test.*#i'
+
+  layers:
+    - name: Controller
+      collectors:
+        - type: className
+          regex: .*UserInterface\\Http\\Controller\\.*
+
+    - name: ArgumentResolver
+      collectors:
+        - type: className
+          regex: .*UserInterface\\Http\\ArgumentResolver\\.*
+
+    - name: Responder
+      collectors:
+        - type: className
+          regex: .*UserInterface\\Http\\Responder\\.*
+
+    - name: RequestDTO
+      collectors:
+        - type: className
+          regex: .*UserInterface\\Http\\Request\\.*
+
+    - name: Application
+      collectors:
+        - type: className
+          regex: .*Application\\.*
+
+    - name: Domain
+      collectors:
+        - type: className
+          regex: .*Domain\\.*
+
+    - name: Infrastructure
+      collectors:
+        - type: className
+          regex: .*Infrastructure\\.*
+
+  ruleset:
+    # Controller layer rules
+    Controller:
+      - Application
+      - Responder
+      - RequestDTO
+      - Domain  # Only for Value Objects like PhotoId in route params
+
+    # ArgumentResolver layer rules
+    ArgumentResolver:
+      - RequestDTO
+      - Domain  # For validation
+
+    # Responder layer rules
+    Responder:
+      - Application  # For Response Models
+
+    # RequestDTO layer rules
+    RequestDTO:
+      - Domain  # For validation with domain rules
+
+    # Application layer rules (Use Cases)
+    Application:
+      - Domain
+
+    # Domain layer rules (Core - depends on nothing)
+    Domain: ~
+
+    # Infrastructure layer rules (Adapters)
+    Infrastructure:
+      - Domain
+      - Application
+
+  skip_violations:
+    # Skip violations will be managed progressively
