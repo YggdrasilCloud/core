@@ -10,6 +10,7 @@ final readonly class StoredFile
         private string $storagePath,
         private string $mimeType,
         private int $sizeInBytes,
+        private ?string $thumbnailPath = null,
     ) {
     }
 
@@ -17,6 +18,7 @@ final readonly class StoredFile
         string $storagePath,
         string $mimeType,
         int $sizeInBytes,
+        ?string $thumbnailPath = null,
     ): self {
         if (trim($storagePath) === '') {
             throw new \InvalidArgumentException('Storage path cannot be empty');
@@ -34,7 +36,7 @@ final readonly class StoredFile
             throw new \InvalidArgumentException('File size cannot be negative');
         }
 
-        return new self($storagePath, $mimeType, $sizeInBytes);
+        return new self($storagePath, $mimeType, $sizeInBytes, $thumbnailPath);
     }
 
     public function storagePath(): string
@@ -50,5 +52,10 @@ final readonly class StoredFile
     public function sizeInBytes(): int
     {
         return $this->sizeInBytes;
+    }
+
+    public function thumbnailPath(): ?string
+    {
+        return $this->thumbnailPath;
     }
 }

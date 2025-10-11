@@ -25,6 +25,7 @@ final class PhotoMapper
             $photo->storedFile()->mimeType(),
             $photo->storedFile()->sizeInBytes(),
             $photo->uploadedAt(),
+            $photo->storedFile()->thumbnailPath(),
         );
     }
 
@@ -50,6 +51,7 @@ final class PhotoMapper
             $entity->getStoragePath(),
             $entity->getMimeType(),
             $entity->getSizeInBytes(),
+            $entity->getThumbnailPath(),
         ));
 
         $uploadedAtProperty = $reflection->getProperty('uploadedAt');

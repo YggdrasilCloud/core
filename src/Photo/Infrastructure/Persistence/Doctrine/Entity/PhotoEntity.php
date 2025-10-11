@@ -33,6 +33,9 @@ class PhotoEntity
     #[ORM\Column(type: 'integer')]
     private int $sizeInBytes;
 
+    #[ORM\Column(type: 'string', length: 500, nullable: true)]
+    private ?string $thumbnailPath = null;
+
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $uploadedAt;
 
@@ -45,6 +48,7 @@ class PhotoEntity
         string $mimeType,
         int $sizeInBytes,
         \DateTimeImmutable $uploadedAt,
+        ?string $thumbnailPath = null,
     ) {
         $this->id = $id;
         $this->folderId = $folderId;
@@ -53,6 +57,7 @@ class PhotoEntity
         $this->storagePath = $storagePath;
         $this->mimeType = $mimeType;
         $this->sizeInBytes = $sizeInBytes;
+        $this->thumbnailPath = $thumbnailPath;
         $this->uploadedAt = $uploadedAt;
     }
 
@@ -94,5 +99,15 @@ class PhotoEntity
     public function getUploadedAt(): \DateTimeImmutable
     {
         return $this->uploadedAt;
+    }
+
+    public function getThumbnailPath(): ?string
+    {
+        return $this->thumbnailPath;
+    }
+
+    public function setThumbnailPath(?string $thumbnailPath): void
+    {
+        $this->thumbnailPath = $thumbnailPath;
     }
 }
