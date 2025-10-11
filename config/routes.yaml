@@ -3,3 +3,9 @@ controllers:
         path: ../src/Controller/
         namespace: App\Controller
     type: attribute
+
+photo_controllers:
+    resource:
+        path: ../src/Photo/UserInterface/Http/Controller/
+        namespace: App\Photo\UserInterface\Http\Controller
+    type: attribute
