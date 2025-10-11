@@ -40,6 +40,7 @@ final readonly class ListPhotosInFolderHandler
                 $photo->storedFile()->mimeType(),
                 $photo->storedFile()->sizeInBytes(),
                 $photo->uploadedAt()->format(\DateTimeInterface::ATOM),
+                '/api/photos/' . $photo->id()->toString() . '/file',
             ),
             $photos,
         );
