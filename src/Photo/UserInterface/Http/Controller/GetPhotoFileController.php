@@ -14,10 +14,11 @@ final readonly class GetPhotoFileController
 {
     public function __construct(
         private DoctrinePhotoRepository $photoRepository,
+        private string $storageBasePath,
     ) {
     }
 
-    #[Route('/api/photos/{photoId}/file', name: 'get_photo_file', methods: ['GET'])]
+    #[Route('/api/photos/{photoId}/file', name: 'get_photo_file', methods: ['GET', 'HEAD'])]
     public function __invoke(string $photoId): Response
     {
         try {
@@ -27,13 +28,15 @@ final readonly class GetPhotoFileController
                 return new Response('Photo not found', Response::HTTP_NOT_FOUND);
             }
 
-            $filePath = $photo->storedFile()->storagePath();
+            // Construct full file path: base path + relative storage path
+            $relativePath = $photo->storedFile()->storagePath();
+            $fullPath = $this->storageBasePath . '/' . $relativePath;
 
-            if (!file_exists($filePath)) {
-                return new Response('File not found', Response::HTTP_NOT_FOUND);
+            if (!file_exists($fullPath)) {
+                return new Response('File not found on disk', Response::HTTP_NOT_FOUND);
             }
 
-            $response = new BinaryFileResponse($filePath);
+            $response = new BinaryFileResponse($fullPath);
             $response->headers->set('Content-Type', $photo->storedFile()->mimeType());
 
             return $response;

@@ -6,6 +6,7 @@
 parameters:
     photo.max_file_size: '%env(int:PHOTO_MAX_FILE_SIZE)%'
     photo.allowed_mime_types: '%env(csv:PHOTO_ALLOWED_MIME_TYPES)%'
+    photo.storage_path: '%kernel.project_dir%/var/storage/photos'
 
 services:
     # default configuration for services in *this* file
@@ -39,3 +40,8 @@ services:
         arguments:
             $maxFileSize: '%photo.max_file_size%'
             $allowedMimeTypes: '%photo.allowed_mime_types%'
+
+    # Photo Bounded Context - Photo file controller
+    App\Photo\UserInterface\Http\Controller\GetPhotoFileController:
+        arguments:
+            $storageBasePath: '%photo.storage_path%'
