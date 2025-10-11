@@ -1,0 +1,41 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": [
+            "src"
+        ]
+    },
+    "logs": {
+        "text": "infection.log",
+        "summary": "infection-summary.log"
+    },
+    "minMsi": 100,
+    "minCoveredMsi": 100,
+    "mutators": {
+        "@default": true,
+        "ArrayOneItem": {
+            "ignore": [
+                "App\\Photo\\Domain\\Model\\Folder::pullDomainEvents",
+                "App\\Photo\\Domain\\Model\\Photo::pullDomainEvents"
+            ]
+        },
+        "UnwrapArrayValues": {
+            "ignore": [
+                "App\\Photo\\Domain\\Service\\FileValidator::__construct"
+            ]
+        },
+        "DecrementInteger": {
+            "ignoreSourceCodeByRegex": [
+                ".*/ 1024 / 1024.*"
+            ]
+        },
+        "IncrementInteger": {
+            "ignoreSourceCodeByRegex": [
+                ".*/ 1024 / 1024.*"
+            ]
+        }
+    },
+    "phpUnit": {
+        "configDir": "."
+    }
+}
