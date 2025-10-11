@@ -43,14 +43,29 @@ final readonly class ThumbnailGenerator
      * @param int $maxWidth Maximum width for thumbnail
      * @param int $maxHeight Maximum height for thumbnail
      * @return string Relative path to generated thumbnail
+     * @throws \InvalidArgumentException if path contains directory traversal
      */
     public function generateThumbnail(string $sourceFilePath, int $maxWidth = 300, int $maxHeight = 300): string
     {
+        $this->validatePath($sourceFilePath);
+
         if ($this->vipsAvailable) {
             return $this->generateWithVips($sourceFilePath, $maxWidth, $maxHeight);
         }
 
         return $this->generateWithGd($sourceFilePath, $maxWidth, $maxHeight);
+    }
+
+    /**
+     * Validate that path doesn't contain directory traversal attempts.
+     *
+     * @throws \InvalidArgumentException
+     */
+    private function validatePath(string $path): void
+    {
+        if (str_contains($path, '..')) {
+            throw new \InvalidArgumentException('Path cannot contain directory traversal (..)');
+        }
     }
 
     /**
@@ -207,9 +222,13 @@ final readonly class ThumbnailGenerator
 
     /**
      * Delete thumbnail file.
+     *
+     * @throws \InvalidArgumentException if path contains directory traversal
      */
     public function deleteThumbnail(string $thumbnailPath): void
     {
+        $this->validatePath($thumbnailPath);
+
         $fullPath = $this->storagePath . '/' . $thumbnailPath;
         if (file_exists($fullPath)) {
             unlink($fullPath);
