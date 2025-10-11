@@ -17,3 +17,12 @@
 /phpunit.xml
 /.phpunit.cache/
 ###< phpunit/phpunit ###
+
+###> composer ###
+/.composer/
+###< composer ###
+
+###> infection/infection ###
+/infection.log
+/infection-summary.log
+###< infection/infection ###
