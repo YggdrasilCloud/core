@@ -9,7 +9,6 @@ use App\Photo\Domain\Model\PhotoId;
 use App\Photo\Domain\Service\FileValidator;
 use App\Photo\UserInterface\Http\Request\UploadPhotoRequest;
 use App\Photo\UserInterface\Http\Responder\JsonResponder;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
@@ -24,11 +23,9 @@ final readonly class UploadPhotoController
     }
 
     #[Route('/api/folders/{folderId}/photos', name: 'upload_photo', methods: ['POST'])]
-    public function __invoke(string $folderId, Request $request): Response
+    public function __invoke(string $folderId, UploadPhotoRequest $uploadRequest): Response
     {
         try {
-            $uploadRequest = UploadPhotoRequest::fromRequest($request);
-
             $validationError = $this->fileValidator->validate($uploadRequest->file);
             if ($validationError !== null) {
                 return $this->responder->badRequest($validationError);

@@ -9,7 +9,6 @@ use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\UserInterface\Http\Request\PaginationParams;
 use App\Photo\UserInterface\Http\Responder\JsonResponder;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\HandleTrait;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -28,15 +27,13 @@ final readonly class ListPhotosController
     }
 
     #[Route('/api/folders/{folderId}/photos', name: 'list_photos', methods: ['GET'])]
-    public function __invoke(string $folderId, Request $request): Response
+    public function __invoke(string $folderId, PaginationParams $pagination): Response
     {
         try {
             $folder = $this->folderRepository->findById(FolderId::fromString($folderId));
             if ($folder === null) {
                 return $this->responder->notFound('Folder not found');
             }
-
-            $pagination = PaginationParams::fromRequest($request);
 
             $result = $this->handle(new ListPhotosInFolderQuery(
                 $folderId,
