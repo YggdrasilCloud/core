@@ -7,22 +7,11 @@ parameters:
         - src
         - tests
 
-    # Doctrine support
-    doctrine:
-        repositoryClass: App\Photo\Infrastructure\Persistence\Doctrine\Repository\DoctrinePhotoRepository
-
-    # Symfony support
-    symfony:
-        container_xml_path: var/cache/dev/App_KernelDevDebugContainer.xml
-
     # Ignore deprecated warnings for now
     reportUnmatchedIgnoredErrors: false
-
-    # Check PHP platform requirements
-    checkMissingIterableValueType: true
-    checkGenericClassInNonGenericObjectType: true
 
     # Exclude patterns
     excludePaths:
         - tests/bootstrap.php
         - var/*
+        - scripts/*

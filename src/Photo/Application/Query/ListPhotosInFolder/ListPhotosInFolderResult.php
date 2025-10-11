@@ -14,6 +14,5 @@ final readonly class ListPhotosInFolderResult
         public int $page,
         public int $perPage,
         public int $total,
-    ) {
-    }
+    ) {}
 }

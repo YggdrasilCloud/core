@@ -18,14 +18,6 @@ final readonly class ThumbnailGenerator
         $this->vipsAvailable = $this->isVipsAvailable();
     }
 
-    private function isVipsAvailable(): bool
-    {
-        $output = [];
-        $returnCode = 0;
-        exec('command -v vipsthumbnail 2>/dev/null', $output, $returnCode);
-        return $returnCode === 0 && !empty($output);
-    }
-
     /**
      * Get the method used for thumbnail generation.
      * Useful for debugging and monitoring.
@@ -40,9 +32,11 @@ final readonly class ThumbnailGenerator
      * Uses vipsthumbnail if available (faster, less memory), falls back to GD.
      *
      * @param string $sourceFilePath Relative or absolute path to source image
-     * @param int $maxWidth Maximum width for thumbnail
-     * @param int $maxHeight Maximum height for thumbnail
+     * @param int    $maxWidth       Maximum width for thumbnail
+     * @param int    $maxHeight      Maximum height for thumbnail
+     *
      * @return string Relative path to generated thumbnail
+     *
      * @throws \InvalidArgumentException if path contains directory traversal
      */
     public function generateThumbnail(string $sourceFilePath, int $maxWidth = 300, int $maxHeight = 300): string
@@ -54,6 +48,30 @@ final readonly class ThumbnailGenerator
         }
 
         return $this->generateWithGd($sourceFilePath, $maxWidth, $maxHeight);
+    }
+
+    /**
+     * Delete thumbnail file.
+     *
+     * @throws \InvalidArgumentException if path contains directory traversal
+     */
+    public function deleteThumbnail(string $thumbnailPath): void
+    {
+        $this->validatePath($thumbnailPath);
+
+        $fullPath = $this->storagePath.'/'.$thumbnailPath;
+        if (file_exists($fullPath)) {
+            unlink($fullPath);
+        }
+    }
+
+    private function isVipsAvailable(): bool
+    {
+        $output = [];
+        $returnCode = 0;
+        exec('command -v vipsthumbnail 2>/dev/null', $output, $returnCode);
+
+        return $returnCode === 0 && !empty($output);
     }
 
     /**
@@ -77,7 +95,7 @@ final readonly class ThumbnailGenerator
         // Convert relative path to absolute if needed
         $absolutePath = $sourceFilePath;
         if (!str_starts_with($sourceFilePath, '/')) {
-            $absolutePath = $this->storagePath . '/' . $sourceFilePath;
+            $absolutePath = $this->storagePath.'/'.$sourceFilePath;
         }
 
         if (!file_exists($absolutePath)) {
@@ -87,7 +105,7 @@ final readonly class ThumbnailGenerator
         // Generate thumbnail path
         $pathInfo = pathinfo($sourceFilePath);
         $relativePath = $pathInfo['dirname'] === '.' ? '' : $pathInfo['dirname'];
-        $thumbnailDir = $this->storagePath . '/thumbs/' . $relativePath;
+        $thumbnailDir = $this->storagePath.'/thumbs/'.$relativePath;
 
         // Create thumbnail directory if it doesn't exist
         if (!is_dir($thumbnailDir) && !mkdir($thumbnailDir, 0755, true) && !is_dir($thumbnailDir)) {
@@ -95,14 +113,14 @@ final readonly class ThumbnailGenerator
         }
 
         // vipsthumbnail outputs as filename.jpg by default, we want filename_thumb.jpg
-        $thumbnailFileName = $pathInfo['filename'] . '_thumb.jpg';
-        $thumbnailPath = $thumbnailDir . '/' . $thumbnailFileName;
+        $thumbnailFileName = $pathInfo['filename'].'_thumb.jpg';
+        $thumbnailPath = $thumbnailDir.'/'.$thumbnailFileName;
 
         // Build vipsthumbnail command
         // -s WxH: size (max dimensions, maintains aspect ratio)
         // -o: output with quality settings [Q=85]
         // --eprofile: embed color profile for better color accuracy
-        $command = sprintf(
+        $command = \sprintf(
             'vipsthumbnail %s -s %dx%d -o %s[Q=85] 2>&1',
             escapeshellarg($absolutePath),
             $maxWidth,
@@ -126,7 +144,7 @@ final readonly class ThumbnailGenerator
         }
 
         // Return relative path from storage root
-        return 'thumbs/' . $relativePath . '/' . $thumbnailFileName;
+        return 'thumbs/'.$relativePath.'/'.$thumbnailFileName;
     }
 
     /**
@@ -138,7 +156,7 @@ final readonly class ThumbnailGenerator
         // Convert relative path to absolute if needed
         $absolutePath = $sourceFilePath;
         if (!str_starts_with($sourceFilePath, '/')) {
-            $absolutePath = $this->storagePath . '/' . $sourceFilePath;
+            $absolutePath = $this->storagePath.'/'.$sourceFilePath;
         }
 
         // Get image info
@@ -171,6 +189,7 @@ final readonly class ThumbnailGenerator
         $thumbnail = imagecreatetruecolor($newWidth, $newHeight);
         if ($thumbnail === false) {
             imagedestroy($sourceImage);
+
             throw new \RuntimeException('Failed to create thumbnail');
         }
 
@@ -188,17 +207,18 @@ final readonly class ThumbnailGenerator
         // Use the original relative path to determine directory structure
         $pathInfo = pathinfo($sourceFilePath);
         $relativePath = $pathInfo['dirname'] === '.' ? '' : $pathInfo['dirname'];
-        $thumbnailDir = $this->storagePath . '/thumbs/' . $relativePath;
+        $thumbnailDir = $this->storagePath.'/thumbs/'.$relativePath;
 
         // Create thumbnail directory if it doesn't exist
         if (!is_dir($thumbnailDir) && !mkdir($thumbnailDir, 0755, true) && !is_dir($thumbnailDir)) {
             imagedestroy($sourceImage);
             imagedestroy($thumbnail);
+
             throw new \RuntimeException('Failed to create thumbnail directory');
         }
 
-        $thumbnailFileName = $pathInfo['filename'] . '_thumb.' . $pathInfo['extension'];
-        $thumbnailPath = $thumbnailDir . '/' . $thumbnailFileName;
+        $thumbnailFileName = $pathInfo['filename'].'_thumb.'.$pathInfo['extension'];
+        $thumbnailPath = $thumbnailDir.'/'.$thumbnailFileName;
 
         // Save thumbnail
         $saved = match ($type) {
@@ -217,21 +237,6 @@ final readonly class ThumbnailGenerator
         }
 
         // Return relative path from storage root
-        return 'thumbs/' . $relativePath . '/' . $thumbnailFileName;
-    }
-
-    /**
-     * Delete thumbnail file.
-     *
-     * @throws \InvalidArgumentException if path contains directory traversal
-     */
-    public function deleteThumbnail(string $thumbnailPath): void
-    {
-        $this->validatePath($thumbnailPath);
-
-        $fullPath = $this->storagePath . '/' . $thumbnailPath;
-        if (file_exists($fullPath)) {
-            unlink($fullPath);
-        }
+        return 'thumbs/'.$relativePath.'/'.$thumbnailFileName;
     }
 }

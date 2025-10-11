@@ -13,8 +13,7 @@ final readonly class GetThumbnailInfoController
 {
     public function __construct(
         private ThumbnailGenerator $thumbnailGenerator,
-    ) {
-    }
+    ) {}
 
     #[Route('/api/thumbnails/info', name: 'get_thumbnail_info', methods: ['GET'])]
     public function __invoke(): Response

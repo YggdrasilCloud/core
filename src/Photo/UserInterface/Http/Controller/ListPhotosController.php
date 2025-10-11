@@ -20,8 +20,7 @@ final readonly class ListPhotosController
         private MessageBusInterface $queryBus,
         private FolderRepositoryInterface $folderRepository,
         private JsonResponder $responder,
-    ) {
-    }
+    ) {}
 
     #[Route('/api/folders/{folderId}/photos', name: 'list_photos', methods: ['GET'])]
     public function __invoke(string $folderId, PaginationParams $pagination): Response

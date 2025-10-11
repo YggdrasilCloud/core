@@ -11,6 +11,11 @@ use App\Photo\Domain\Model\FolderName;
 use App\Photo\Domain\Model\UserId;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 final class FolderTest extends TestCase
 {
     public function testCreateFolderWithCorrectData(): void
@@ -21,10 +26,10 @@ final class FolderTest extends TestCase
 
         $folder = Folder::create($folderId, $folderName, $ownerId);
 
-        $this->assertTrue($folder->id()->equals($folderId));
-        $this->assertTrue($folder->name()->equals($folderName));
-        $this->assertTrue($folder->ownerId()->equals($ownerId));
-        $this->assertInstanceOf(\DateTimeImmutable::class, $folder->createdAt());
+        self::assertTrue($folder->id()->equals($folderId));
+        self::assertTrue($folder->name()->equals($folderName));
+        self::assertTrue($folder->ownerId()->equals($ownerId));
+        self::assertInstanceOf(\DateTimeImmutable::class, $folder->createdAt());
     }
 
     public function testCreateRecordsFolderCreatedEvent(): void
@@ -37,8 +42,8 @@ final class FolderTest extends TestCase
 
         $events = $folder->pullDomainEvents();
 
-        $this->assertCount(1, $events);
-        $this->assertInstanceOf(FolderCreated::class, $events[0]);
+        self::assertCount(1, $events);
+        self::assertInstanceOf(FolderCreated::class, $events[0]);
     }
 
     public function testPullDomainEventsClearsEventsList(): void
@@ -52,8 +57,8 @@ final class FolderTest extends TestCase
         $firstPull = $folder->pullDomainEvents();
         $secondPull = $folder->pullDomainEvents();
 
-        $this->assertCount(1, $firstPull);
-        $this->assertCount(0, $secondPull);
+        self::assertCount(1, $firstPull);
+        self::assertCount(0, $secondPull);
     }
 
     public function testCreatedAtIsSetToCurrentTime(): void
@@ -68,7 +73,7 @@ final class FolderTest extends TestCase
 
         $after = new \DateTimeImmutable();
 
-        $this->assertGreaterThanOrEqual($before->getTimestamp(), $folder->createdAt()->getTimestamp());
-        $this->assertLessThanOrEqual($after->getTimestamp(), $folder->createdAt()->getTimestamp());
+        self::assertGreaterThanOrEqual($before->getTimestamp(), $folder->createdAt()->getTimestamp());
+        self::assertLessThanOrEqual($after->getTimestamp(), $folder->createdAt()->getTimestamp());
     }
 }

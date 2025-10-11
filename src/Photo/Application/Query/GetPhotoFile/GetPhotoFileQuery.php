@@ -8,6 +8,5 @@ final readonly class GetPhotoFileQuery
 {
     public function __construct(
         public string $photoId,
-    ) {
-    }
+    ) {}
 }

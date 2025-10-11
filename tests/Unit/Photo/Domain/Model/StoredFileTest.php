@@ -8,15 +8,20 @@ use App\Photo\Domain\Model\StoredFile;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 final class StoredFileTest extends TestCase
 {
     public function testCreateAcceptsValidParameters(): void
     {
         $file = StoredFile::create('2025/10/11/photo.jpg', 'image/jpeg', 1024);
 
-        $this->assertSame('2025/10/11/photo.jpg', $file->storagePath());
-        $this->assertSame('image/jpeg', $file->mimeType());
-        $this->assertSame(1024, $file->sizeInBytes());
+        self::assertSame('2025/10/11/photo.jpg', $file->storagePath());
+        self::assertSame('image/jpeg', $file->mimeType());
+        self::assertSame(1024, $file->sizeInBytes());
     }
 
     public function testCreateRejectsEmptyStoragePath(): void
@@ -71,24 +76,29 @@ final class StoredFileTest extends TestCase
     {
         $file = StoredFile::create('photo.jpg', 'image/jpeg', 0);
 
-        $this->assertSame(0, $file->sizeInBytes());
+        self::assertSame(0, $file->sizeInBytes());
     }
 
-    #[DataProvider('validImageMimeTypesProvider')]
+    #[DataProvider('provideCreateAcceptsVariousImageMimeTypesCases')]
     public function testCreateAcceptsVariousImageMimeTypes(string $mimeType): void
     {
         $file = StoredFile::create('photo.jpg', $mimeType, 1024);
 
-        $this->assertSame($mimeType, $file->mimeType());
+        self::assertSame($mimeType, $file->mimeType());
     }
 
-    public static function validImageMimeTypesProvider(): iterable
+    public static function provideCreateAcceptsVariousImageMimeTypesCases(): iterable
     {
         yield 'JPEG' => ['image/jpeg'];
+
         yield 'PNG' => ['image/png'];
+
         yield 'GIF' => ['image/gif'];
+
         yield 'WebP' => ['image/webp'];
+
         yield 'SVG' => ['image/svg+xml'];
+
         yield 'BMP' => ['image/bmp'];
     }
 }

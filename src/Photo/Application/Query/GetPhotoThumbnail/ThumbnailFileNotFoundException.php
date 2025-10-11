@@ -8,6 +8,6 @@ final class ThumbnailFileNotFoundException extends \RuntimeException
 {
     public function __construct(string $filePath)
     {
-        parent::__construct(sprintf('Thumbnail file not found on disk: "%s"', $filePath));
+        parent::__construct(\sprintf('Thumbnail file not found on disk: "%s"', $filePath));
     }
 }

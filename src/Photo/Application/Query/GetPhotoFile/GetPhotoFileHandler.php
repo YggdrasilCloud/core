@@ -14,8 +14,7 @@ final readonly class GetPhotoFileHandler
     public function __construct(
         private PhotoRepositoryInterface $photoRepository,
         private string $storageBasePath,
-    ) {
-    }
+    ) {}
 
     /**
      * @throws PhotoNotFoundException
@@ -30,7 +29,7 @@ final readonly class GetPhotoFileHandler
         }
 
         $relativePath = $photo->storedFile()->storagePath();
-        $fullPath = $this->storageBasePath . '/' . $relativePath;
+        $fullPath = $this->storageBasePath.'/'.$relativePath;
 
         if (!file_exists($fullPath)) {
             throw new FileNotFoundException($fullPath);

@@ -16,8 +16,7 @@ final class Folder
         private FolderName $name,
         private UserId $ownerId,
         private \DateTimeImmutable $createdAt,
-    ) {
-    }
+    ) {}
 
     public static function create(
         FolderId $id,

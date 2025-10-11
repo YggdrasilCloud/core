@@ -15,7 +15,7 @@ final readonly class FileValidator
         array $allowedMimeTypes,
     ) {
         // Filter out empty strings from CSV parsing
-        $this->cleanedMimeTypes = array_values(array_filter($allowedMimeTypes, fn($type) => $type !== ''));
+        $this->cleanedMimeTypes = array_values(array_filter($allowedMimeTypes, static fn ($type) => $type !== ''));
     }
 
     public function validate(UploadedFile $file): ?string
@@ -23,14 +23,15 @@ final readonly class FileValidator
         // Check file size (skip if -1 = unlimited)
         if ($this->maxFileSize !== -1 && $file->getSize() > $this->maxFileSize) {
             $maxSizeMB = round($this->maxFileSize / 1024 / 1024, 2);
-            return sprintf('File size exceeds maximum allowed size of %s MB', $maxSizeMB);
+
+            return \sprintf('File size exceeds maximum allowed size of %s MB', $maxSizeMB);
         }
 
         // Check MIME type (skip if empty array = no restriction)
-        if (count($this->cleanedMimeTypes) > 0) {
+        if (\count($this->cleanedMimeTypes) > 0) {
             $mimeType = $file->getMimeType();
-            if ($mimeType === null || !in_array($mimeType, $this->cleanedMimeTypes, true)) {
-                return sprintf(
+            if ($mimeType === null || !\in_array($mimeType, $this->cleanedMimeTypes, true)) {
+                return \sprintf(
                     'File type not allowed. Allowed types: %s',
                     implode(', ', $this->cleanedMimeTypes)
                 );
@@ -55,6 +56,6 @@ final readonly class FileValidator
         // Limit length and ensure it's not empty
         $basename = substr($basename ?: 'file', 0, 100);
 
-        return $basename . ($extension ? '.' . $extension : '');
+        return $basename.($extension ? '.'.$extension : '');
     }
 }

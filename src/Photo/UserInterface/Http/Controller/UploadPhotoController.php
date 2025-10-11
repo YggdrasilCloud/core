@@ -19,8 +19,7 @@ final readonly class UploadPhotoController
         private MessageBusInterface $commandBus,
         private FileValidator $fileValidator,
         private JsonResponder $responder,
-    ) {
-    }
+    ) {}
 
     #[Route('/api/folders/{folderId}/photos', name: 'upload_photo', methods: ['POST'])]
     public function __invoke(string $folderId, UploadPhotoRequest $uploadRequest): Response
@@ -67,7 +66,7 @@ final readonly class UploadPhotoController
                 'fileName' => $sanitizedFileName,
                 'mimeType' => $mimeType,
                 'size' => $uploadRequest->file->getSize(),
-            ], sprintf('/api/folders/%s/photos', $folderId));
+            ], \sprintf('/api/folders/%s/photos', $folderId));
         } catch (\DomainException $e) {
             return $this->responder->notFound($e->getMessage());
         } catch (\InvalidArgumentException $e) {

@@ -13,6 +13,11 @@ use App\Photo\Domain\Model\StoredFile;
 use App\Photo\Domain\Model\UserId;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 final class PhotoTest extends TestCase
 {
     public function testUploadCreatesPhotoWithCorrectData(): void
@@ -25,12 +30,12 @@ final class PhotoTest extends TestCase
 
         $photo = Photo::upload($photoId, $folderId, $userId, $fileName, $storedFile);
 
-        $this->assertTrue($photo->id()->equals($photoId));
-        $this->assertTrue($photo->folderId()->equals($folderId));
-        $this->assertTrue($photo->ownerId()->equals($userId));
-        $this->assertTrue($photo->fileName()->equals($fileName));
-        $this->assertSame($storedFile, $photo->storedFile());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $photo->uploadedAt());
+        self::assertTrue($photo->id()->equals($photoId));
+        self::assertTrue($photo->folderId()->equals($folderId));
+        self::assertTrue($photo->ownerId()->equals($userId));
+        self::assertTrue($photo->fileName()->equals($fileName));
+        self::assertSame($storedFile, $photo->storedFile());
+        self::assertInstanceOf(\DateTimeImmutable::class, $photo->uploadedAt());
     }
 
     public function testUploadRecordsPhotoUploadedEvent(): void
@@ -44,8 +49,8 @@ final class PhotoTest extends TestCase
         $photo = Photo::upload($photoId, $folderId, $userId, $fileName, $storedFile);
         $events = $photo->pullDomainEvents();
 
-        $this->assertCount(1, $events);
-        $this->assertInstanceOf(PhotoUploaded::class, $events[0]);
+        self::assertCount(1, $events);
+        self::assertInstanceOf(PhotoUploaded::class, $events[0]);
     }
 
     public function testPullDomainEventsClearsEventsList(): void
@@ -61,8 +66,8 @@ final class PhotoTest extends TestCase
         $firstPull = $photo->pullDomainEvents();
         $secondPull = $photo->pullDomainEvents();
 
-        $this->assertCount(1, $firstPull);
-        $this->assertCount(0, $secondPull);
+        self::assertCount(1, $firstPull);
+        self::assertCount(0, $secondPull);
     }
 
     public function testUploadedAtIsSetToCurrentTime(): void
@@ -79,7 +84,7 @@ final class PhotoTest extends TestCase
 
         $after = new \DateTimeImmutable();
 
-        $this->assertGreaterThanOrEqual($before->getTimestamp(), $photo->uploadedAt()->getTimestamp());
-        $this->assertLessThanOrEqual($after->getTimestamp(), $photo->uploadedAt()->getTimestamp());
+        self::assertGreaterThanOrEqual($before->getTimestamp(), $photo->uploadedAt()->getTimestamp());
+        self::assertLessThanOrEqual($after->getTimestamp(), $photo->uploadedAt()->getTimestamp());
     }
 }

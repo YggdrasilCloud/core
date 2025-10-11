@@ -16,8 +16,7 @@ final readonly class CreateFolderRequestResolver implements ValueResolverInterfa
     public function __construct(
         private SerializerInterface $serializer,
         private ValidatorInterface $validator,
-    ) {
-    }
+    ) {}
 
     /**
      * @return iterable<CreateFolderRequest>

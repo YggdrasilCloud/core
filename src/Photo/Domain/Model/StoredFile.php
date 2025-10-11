@@ -11,8 +11,7 @@ final readonly class StoredFile
         private string $mimeType,
         private int $sizeInBytes,
         private ?string $thumbnailPath = null,
-    ) {
-    }
+    ) {}
 
     public static function create(
         string $storagePath,
@@ -29,7 +28,7 @@ final readonly class StoredFile
         }
 
         if (!str_starts_with($mimeType, 'image/')) {
-            throw new \InvalidArgumentException(sprintf('Invalid mime type for photo: %s', $mimeType));
+            throw new \InvalidArgumentException(\sprintf('Invalid mime type for photo: %s', $mimeType));
         }
 
         if ($sizeInBytes < 0) {

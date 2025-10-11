@@ -11,13 +11,12 @@ final readonly class PaginationParams
     private function __construct(
         public int $page,
         public int $perPage,
-    ) {
-    }
+    ) {}
 
     /**
      * Extract and normalize pagination parameters from HTTP request.
      *
-     * @param int $maxPerPage Maximum allowed items per page (default: 100)
+     * @param int $maxPerPage     Maximum allowed items per page (default: 100)
      * @param int $defaultPerPage Default items per page if not specified (default: 20)
      */
     public static function fromRequest(Request $request, int $maxPerPage = 100, int $defaultPerPage = 20): self

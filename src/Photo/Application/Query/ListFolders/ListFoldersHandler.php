@@ -12,15 +12,14 @@ final readonly class ListFoldersHandler
 {
     public function __construct(
         private FolderRepositoryInterface $folderRepository,
-    ) {
-    }
+    ) {}
 
     public function __invoke(ListFoldersQuery $query): ListFoldersResult
     {
         $folders = $this->folderRepository->findAll();
 
         $items = array_map(
-            fn ($folder) => new FolderDto(
+            static fn ($folder) => new FolderDto(
                 id: $folder->id()->toString(),
                 name: $folder->name()->toString(),
                 createdAt: $folder->createdAt()->format(\DateTimeInterface::ATOM),

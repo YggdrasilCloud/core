@@ -24,8 +24,7 @@ final readonly class UploadPhotoToFolderHandler
         private FolderRepositoryInterface $folderRepository,
         private FileStorageInterface $fileStorage,
         private ThumbnailGenerator $thumbnailGenerator,
-    ) {
-    }
+    ) {}
 
     public function __invoke(UploadPhotoToFolderCommand $command): void
     {
@@ -36,7 +35,7 @@ final readonly class UploadPhotoToFolderHandler
         if ($folder === null) {
             // NOTE: DomainException indicates business rule violation (folder must exist)
             // Future: consider custom FolderNotFoundException for better error handling
-            throw new \DomainException(sprintf('Folder not found: %s', $command->folderId));
+            throw new \DomainException(\sprintf('Folder not found: %s', $command->folderId));
         }
 
         // Stocker le fichier
@@ -44,6 +43,7 @@ final readonly class UploadPhotoToFolderHandler
 
         // Générer la vignette
         $thumbnailPath = null;
+
         try {
             $thumbnailPath = $this->thumbnailGenerator->generateThumbnail($storagePath);
         } catch (\Exception) {

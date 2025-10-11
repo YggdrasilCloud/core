@@ -16,8 +16,7 @@ final readonly class CreateFolderHandler
 {
     public function __construct(
         private FolderRepositoryInterface $folderRepository,
-    ) {
-    }
+    ) {}
 
     public function __invoke(CreateFolderCommand $command): void
     {

@@ -8,6 +8,11 @@ use App\Photo\Domain\Service\FileValidator;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 final class FileValidatorTest extends TestCase
 {
     public function testValidateAcceptsValidFile(): void
@@ -19,7 +24,7 @@ final class FileValidatorTest extends TestCase
 
         $error = $validator->validate($file);
 
-        $this->assertNull($error);
+        self::assertNull($error);
     }
 
     public function testValidateRejectsFileTooLarge(): void
@@ -31,8 +36,8 @@ final class FileValidatorTest extends TestCase
 
         $error = $validator->validate($file);
 
-        $this->assertStringContainsString('exceeds maximum allowed size', $error);
-        $this->assertStringContainsString('0 MB', $error);
+        self::assertStringContainsString('exceeds maximum allowed size', $error);
+        self::assertStringContainsString('0 MB', $error);
     }
 
     public function testValidateAllowsUnlimitedSizeWhenSetToMinusOne(): void
@@ -44,7 +49,7 @@ final class FileValidatorTest extends TestCase
 
         $error = $validator->validate($file);
 
-        $this->assertNull($error);
+        self::assertNull($error);
     }
 
     public function testValidateRejectsInvalidMimeType(): void
@@ -56,8 +61,8 @@ final class FileValidatorTest extends TestCase
 
         $error = $validator->validate($file);
 
-        $this->assertStringContainsString('File type not allowed', $error);
-        $this->assertStringContainsString('image/jpeg, image/png', $error);
+        self::assertStringContainsString('File type not allowed', $error);
+        self::assertStringContainsString('image/jpeg, image/png', $error);
     }
 
     public function testValidateRejectsNullMimeType(): void
@@ -69,7 +74,7 @@ final class FileValidatorTest extends TestCase
 
         $error = $validator->validate($file);
 
-        $this->assertStringContainsString('File type not allowed', $error);
+        self::assertStringContainsString('File type not allowed', $error);
     }
 
     public function testValidateAllowsAnyMimeTypeWhenListIsEmpty(): void
@@ -81,7 +86,7 @@ final class FileValidatorTest extends TestCase
 
         $error = $validator->validate($file);
 
-        $this->assertNull($error);
+        self::assertNull($error);
     }
 
     public function testValidateFiltersOutEmptyStringsFromMimeTypesList(): void
@@ -94,7 +99,7 @@ final class FileValidatorTest extends TestCase
         $error = $validator->validate($file);
 
         // Should reject because gif is not in the filtered list (only jpeg and png)
-        $this->assertStringContainsString('File type not allowed', $error);
+        self::assertStringContainsString('File type not allowed', $error);
     }
 
     public function testSanitizeFilenameRemovesSpecialCharacters(): void
@@ -103,7 +108,7 @@ final class FileValidatorTest extends TestCase
 
         $sanitized = $validator->sanitizeFilename('Héllo Wörld!@#$%^&*()+.png');
 
-        $this->assertSame('HelloWorld.png', $sanitized);
+        self::assertSame('HelloWorld.png', $sanitized);
     }
 
     public function testSanitizeFilenamePreservesExtension(): void
@@ -112,17 +117,17 @@ final class FileValidatorTest extends TestCase
 
         $sanitized = $validator->sanitizeFilename('test-file.tar.gz');
 
-        $this->assertStringEndsWith('.gz', $sanitized);
+        self::assertStringEndsWith('.gz', $sanitized);
     }
 
     public function testSanitizeFilenameLimitsLength(): void
     {
         $validator = new FileValidator(20971520, []);
-        $longName = str_repeat('a', 200) . '.jpg';
+        $longName = str_repeat('a', 200).'.jpg';
 
         $sanitized = $validator->sanitizeFilename($longName);
 
-        $this->assertLessThanOrEqual(104, strlen($sanitized)); // 100 + '.jpg'
+        self::assertLessThanOrEqual(104, \strlen($sanitized)); // 100 + '.jpg'
     }
 
     public function testSanitizeFilenameHandlesEmptyBasename(): void
@@ -131,7 +136,7 @@ final class FileValidatorTest extends TestCase
 
         $sanitized = $validator->sanitizeFilename('!@#$%^&*.png');
 
-        $this->assertSame('file.png', $sanitized);
+        self::assertSame('file.png', $sanitized);
     }
 
     public function testSanitizeFilenameHandlesNoExtension(): void
@@ -140,7 +145,7 @@ final class FileValidatorTest extends TestCase
 
         $sanitized = $validator->sanitizeFilename('filename');
 
-        $this->assertSame('filename', $sanitized);
+        self::assertSame('filename', $sanitized);
     }
 
     public function testSanitizeFilenameNormalizesAccents(): void
@@ -149,7 +154,7 @@ final class FileValidatorTest extends TestCase
 
         $sanitized = $validator->sanitizeFilename('Été_été.jpg');
 
-        $this->assertSame('Ete_ete.jpg', $sanitized);
+        self::assertSame('Ete_ete.jpg', $sanitized);
     }
 
     public function testValidateRejectsFileExactlyAtLimit(): void
@@ -161,7 +166,7 @@ final class FileValidatorTest extends TestCase
 
         $error = $validator->validate($file);
 
-        $this->assertStringContainsString('exceeds maximum allowed size', $error);
+        self::assertStringContainsString('exceeds maximum allowed size', $error);
     }
 
     public function testValidateAcceptsFileJustUnderLimit(): void
@@ -173,18 +178,18 @@ final class FileValidatorTest extends TestCase
 
         $error = $validator->validate($file);
 
-        $this->assertNull($error);
+        self::assertNull($error);
     }
 
     public function testSanitizeFilenameHandlesExactly100Characters(): void
     {
         $validator = new FileValidator(20971520, []);
-        $longName = str_repeat('a', 100) . '.txt';
+        $longName = str_repeat('a', 100).'.txt';
 
         $sanitized = $validator->sanitizeFilename($longName);
 
         // Should be truncated to 100 chars for basename + extension
-        $this->assertLessThanOrEqual(104, strlen($sanitized));
+        self::assertLessThanOrEqual(104, \strlen($sanitized));
     }
 
     public function testFiltersEmptyStringFromMimeTypesAtConstruction(): void
@@ -197,7 +202,7 @@ final class FileValidatorTest extends TestCase
         $error = $validator->validate($file);
 
         // Should accept jpeg because empty string was filtered out
-        $this->assertNull($error);
+        self::assertNull($error);
     }
 
     public function testValidateDisplaysCorrectMBCalculation(): void
@@ -209,9 +214,9 @@ final class FileValidatorTest extends TestCase
 
         $error = $validator->validate($file);
 
-        $this->assertStringContainsString('2 MB', $error);
+        self::assertStringContainsString('2 MB', $error);
         // Verify exact calculation: 2097152 / 1024 / 1024 = 2.0
-        $this->assertStringContainsString('2 MB', $error);
+        self::assertStringContainsString('2 MB', $error);
     }
 
     public function testValidateCalculatesMBWithCorrectDivision(): void
@@ -225,9 +230,9 @@ final class FileValidatorTest extends TestCase
         $error = $validator->validate($file);
 
         // 3145728 / 1024 / 1024 = 3.0 (not 3.003 with wrong divisor)
-        $this->assertStringContainsString('3 MB', $error);
-        $this->assertStringNotContainsString('2.99', $error);
-        $this->assertStringNotContainsString('3.00', $error); // Should be "3 MB" not "3.00 MB"
+        self::assertStringContainsString('3 MB', $error);
+        self::assertStringNotContainsString('2.99', $error);
+        self::assertStringNotContainsString('3.00', $error); // Should be "3 MB" not "3.00 MB"
     }
 
     public function testValidateUsesRoundNotFloorForMBCalculation(): void
@@ -241,7 +246,7 @@ final class FileValidatorTest extends TestCase
         $error = $validator->validate($file);
 
         // round(1.5, 2) = 1.5, floor(1.5) = 1
-        $this->assertStringContainsString('1.5 MB', $error);
+        self::assertStringContainsString('1.5 MB', $error);
     }
 
     public function testValidateUsesTwoDecimalPrecision(): void
@@ -255,20 +260,20 @@ final class FileValidatorTest extends TestCase
         $error = $validator->validate($file);
 
         // With precision 2: 1.10, with precision 1: 1.1
-        $this->assertStringContainsString('1.1 MB', $error);
+        self::assertStringContainsString('1.1 MB', $error);
     }
 
     public function testSanitizeFilenameUses100CharacterLimit(): void
     {
         // Verify exactly 100 chars are used, not 99 or 101
         $validator = new FileValidator(20971520, []);
-        $input = str_repeat('a', 101) . '.txt'; // 101 chars + extension
+        $input = str_repeat('a', 101).'.txt'; // 101 chars + extension
 
         $sanitized = $validator->sanitizeFilename($input);
 
         // Should be truncated to 100 + extension
         $basename = pathinfo($sanitized, PATHINFO_FILENAME);
-        $this->assertSame(100, strlen($basename));
+        self::assertSame(100, \strlen($basename));
     }
 
     public function testValidatorFiltersEmptyStringsWithArrayValues(): void
@@ -282,9 +287,9 @@ final class FileValidatorTest extends TestCase
         $error = $validator->validate($file);
 
         // Should reject GIF because only JPEG and PNG are in cleaned list
-        $this->assertNotNull($error);
-        $this->assertStringContainsString('image/jpeg, image/png', $error);
+        self::assertNotNull($error);
+        self::assertStringContainsString('image/jpeg, image/png', $error);
         // Verify no empty entries in error message
-        $this->assertStringNotContainsString(', ,', $error);
+        self::assertStringNotContainsString(', ,', $error);
     }
 }

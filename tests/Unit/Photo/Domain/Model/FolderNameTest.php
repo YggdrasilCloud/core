@@ -7,20 +7,25 @@ namespace App\Tests\Unit\Photo\Domain\Model;
 use App\Photo\Domain\Model\FolderName;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 final class FolderNameTest extends TestCase
 {
     public function testFromStringAcceptsValidName(): void
     {
         $name = FolderName::fromString('My Folder');
 
-        $this->assertSame('My Folder', $name->toString());
+        self::assertSame('My Folder', $name->toString());
     }
 
     public function testFromStringTrimsWhitespace(): void
     {
         $name = FolderName::fromString('  My Folder  ');
 
-        $this->assertSame('My Folder', $name->toString());
+        self::assertSame('My Folder', $name->toString());
     }
 
     public function testFromStringRejectsEmptyString(): void
@@ -51,7 +56,7 @@ final class FolderNameTest extends TestCase
     {
         $name = FolderName::fromString(str_repeat('a', 255));
 
-        $this->assertSame(255, strlen($name->toString()));
+        self::assertSame(255, \strlen($name->toString()));
     }
 
     public function testFromStringAcceptsExactly255Characters(): void
@@ -59,7 +64,7 @@ final class FolderNameTest extends TestCase
         $input = str_repeat('x', 255);
         $name = FolderName::fromString($input);
 
-        $this->assertSame(255, strlen($name->toString()));
+        self::assertSame(255, \strlen($name->toString()));
     }
 
     public function testFromStringRejectsExactly256Characters(): void
@@ -74,7 +79,7 @@ final class FolderNameTest extends TestCase
         $name1 = FolderName::fromString('My Folder');
         $name2 = FolderName::fromString('My Folder');
 
-        $this->assertTrue($name1->equals($name2));
+        self::assertTrue($name1->equals($name2));
     }
 
     public function testEqualsReturnsFalseForDifferentNames(): void
@@ -82,6 +87,6 @@ final class FolderNameTest extends TestCase
         $name1 = FolderName::fromString('Folder A');
         $name2 = FolderName::fromString('Folder B');
 
-        $this->assertFalse($name1->equals($name2));
+        self::assertFalse($name1->equals($name2));
     }
 }

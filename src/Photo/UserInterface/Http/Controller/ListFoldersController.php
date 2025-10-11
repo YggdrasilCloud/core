@@ -16,8 +16,7 @@ final readonly class ListFoldersController
     public function __construct(
         private MessageBusInterface $queryBus,
         private JsonResponder $responder,
-    ) {
-    }
+    ) {}
 
     #[Route('/api/folders', name: 'list_folders', methods: ['GET'])]
     public function __invoke(): Response
@@ -26,7 +25,7 @@ final readonly class ListFoldersController
         $result = $envelope->last(HandledStamp::class)?->getResult();
 
         $data = array_map(
-            fn ($folder) => [
+            static fn ($folder) => [
                 'id' => $folder->id,
                 'name' => $folder->name,
                 'createdAt' => $folder->createdAt,

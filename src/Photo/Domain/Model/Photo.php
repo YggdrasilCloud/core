@@ -18,8 +18,7 @@ final class Photo
         private FileName $fileName,
         private StoredFile $storedFile,
         private \DateTimeImmutable $uploadedAt,
-    ) {
-    }
+    ) {}
 
     public static function upload(
         PhotoId $id,

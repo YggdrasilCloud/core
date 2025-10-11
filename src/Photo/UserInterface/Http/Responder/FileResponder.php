@@ -20,6 +20,7 @@ final readonly class FileResponder
         $response->setAutoLastModified();
         $response->setPublic();
         $response->setMaxAge($model->cacheMaxAge);
+        $response->setSharedMaxAge($model->cacheMaxAge);
 
         // Check if response is not modified (sends 304 if client has fresh cache)
         $response->isNotModified($request);

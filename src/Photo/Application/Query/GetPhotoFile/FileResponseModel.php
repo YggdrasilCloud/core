@@ -10,6 +10,5 @@ final readonly class FileResponseModel
         public string $filePath,
         public string $mimeType,
         public int $cacheMaxAge,
-    ) {
-    }
+    ) {}
 }

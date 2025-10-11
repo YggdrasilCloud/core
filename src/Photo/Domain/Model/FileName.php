@@ -6,9 +6,7 @@ namespace App\Photo\Domain\Model;
 
 final readonly class FileName
 {
-    private function __construct(private string $value)
-    {
-    }
+    private function __construct(private string $value) {}
 
     public static function fromString(string $name): self
     {
@@ -18,7 +16,7 @@ final readonly class FileName
             throw new \InvalidArgumentException('File name cannot be empty');
         }
 
-        if (strlen($trimmed) > 255) {
+        if (\strlen($trimmed) > 255) {
             throw new \InvalidArgumentException('File name cannot exceed 255 characters');
         }
 

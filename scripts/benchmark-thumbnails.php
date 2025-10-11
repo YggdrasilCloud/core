@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__.'/../vendor/autoload.php';
 
 use App\Photo\Domain\Service\ThumbnailGenerator;
 
@@ -9,7 +9,7 @@ $generator = new ThumbnailGenerator('/app/var/storage/photos');
 
 echo "🔍 Thumbnail Generator Benchmark\n";
 echo "================================\n\n";
-echo "📊 Current method: " . $generator->getMethod() . "\n\n";
+echo '📊 Current method: '.$generator->getMethod()."\n\n";
 
 // Trouver une image de test
 $testImage = null;
@@ -22,7 +22,8 @@ foreach ($iterator as $file) {
     if ($file->isFile() && preg_match('/\.(jpg|jpeg|png)$/i', $file->getFilename())) {
         // Exclure les thumbnails
         if (!str_contains($file->getPathname(), '/thumbs/')) {
-            $testImage = str_replace($storageDir . '/', '', $file->getPathname());
+            $testImage = str_replace($storageDir.'/', '', $file->getPathname());
+
             break;
         }
     }
@@ -30,14 +31,15 @@ foreach ($iterator as $file) {
 
 if (!$testImage) {
     echo "❌ No test image found\n";
+
     exit(1);
 }
 
-echo "📸 Test image: $testImage\n";
+echo "📸 Test image: {$testImage}\n";
 echo "📏 Generating 5 thumbnails...\n\n";
 
 $times = [];
-for ($i = 1; $i <= 5; $i++) {
+for ($i = 1; $i <= 5; ++$i) {
     $start = microtime(true);
 
     try {
@@ -48,8 +50,8 @@ for ($i = 1; $i <= 5; $i++) {
         echo sprintf("  Run %d: %.2f ms\n", $i, $elapsed);
 
         // Nettoyer le thumbnail de test
-        @unlink($storageDir . '/' . $thumbnailPath);
-    } catch (\Exception $e) {
+        @unlink($storageDir.'/'.$thumbnailPath);
+    } catch (Exception $e) {
         echo sprintf("  Run %d: FAILED - %s\n", $i, $e->getMessage());
     }
 }

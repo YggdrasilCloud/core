@@ -16,15 +16,24 @@ use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 final class GetPhotoFileControllerTest extends WebTestCase
 {
     private string $testStoragePath;
 
     protected function setUp(): void
     {
+        self::ensureKernelShutdown();
         parent::setUp();
-        $this->testStoragePath = sys_get_temp_dir() . '/test_photos_' . uniqid();
-        mkdir($this->testStoragePath, 0755, true);
+        // Use the actual storage path that the application expects
+        $this->testStoragePath = __DIR__.'/../../../../../../var/storage/photos';
+        if (!is_dir($this->testStoragePath)) {
+            mkdir($this->testStoragePath, 0755, true);
+        }
     }
 
     protected function tearDown(): void
@@ -38,7 +47,7 @@ final class GetPhotoFileControllerTest extends WebTestCase
 
     public function testGetPhotoFileReturns200WithCorrectHeaders(): void
     {
-        $client = static::createClient();
+        $client = self::createClient();
         $container = $client->getContainer();
 
         // Create test folder
@@ -65,41 +74,41 @@ final class GetPhotoFileControllerTest extends WebTestCase
         $photoRepo->save($photo);
 
         // Create actual test file on disk
-        $testFilePath = $this->testStoragePath . '/' . $relativePath;
-        mkdir(dirname($testFilePath), 0755, true);
+        $testFilePath = $this->testStoragePath.'/'.$relativePath;
+        $dir = \dirname($testFilePath);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
         file_put_contents($testFilePath, 'fake image content');
 
-        // Override storage path parameter for this test
-        $container->set('photo.storage_path', $this->testStoragePath);
-
         // Make request
-        $client->request('GET', '/api/photos/' . $photoId->toString() . '/file');
+        $client->request('GET', '/api/photos/'.$photoId->toString().'/file');
 
         $response = $client->getResponse();
 
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('image/jpeg', $response->headers->get('Content-Type'));
-        $this->assertTrue($response->headers->has('ETag'));
-        $this->assertTrue($response->headers->has('Last-Modified'));
-        $this->assertSame('3600', $response->headers->getCacheControlDirective('max-age'));
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('image/jpeg', $response->headers->get('Content-Type'));
+        self::assertTrue($response->headers->has('ETag'));
+        self::assertTrue($response->headers->has('Last-Modified'));
+        self::assertSame('3600', $response->headers->getCacheControlDirective('max-age'));
     }
 
     public function testGetPhotoFileReturns404WhenPhotoNotFound(): void
     {
-        $client = static::createClient();
+        $client = self::createClient();
 
         $fakePhotoId = PhotoId::generate()->toString();
-        $client->request('GET', '/api/photos/' . $fakePhotoId . '/file');
+        $client->request('GET', '/api/photos/'.$fakePhotoId.'/file');
 
         $response = $client->getResponse();
 
-        $this->assertSame(404, $response->getStatusCode());
-        $this->assertStringContainsString('Photo not found', $response->getContent());
+        self::assertSame(404, $response->getStatusCode());
+        self::assertStringContainsString('Photo not found', $response->getContent());
     }
 
     public function testGetPhotoFileReturns404WhenFileNotOnDisk(): void
     {
-        $client = static::createClient();
+        $client = self::createClient();
         $container = $client->getContainer();
 
         // Create test folder
@@ -124,31 +133,29 @@ final class GetPhotoFileControllerTest extends WebTestCase
         $photoRepo = $container->get(PhotoRepositoryInterface::class);
         $photoRepo->save($photo);
 
-        $container->set('photo.storage_path', $this->testStoragePath);
-
-        $client->request('GET', '/api/photos/' . $photoId->toString() . '/file');
+        $client->request('GET', '/api/photos/'.$photoId->toString().'/file');
 
         $response = $client->getResponse();
 
-        $this->assertSame(404, $response->getStatusCode());
-        $this->assertStringContainsString('File not found on disk', $response->getContent());
+        self::assertSame(404, $response->getStatusCode());
+        self::assertStringContainsString('File not found on disk', $response->getContent());
     }
 
     public function testGetPhotoFileReturns400ForInvalidPhotoId(): void
     {
-        $client = static::createClient();
+        $client = self::createClient();
 
         $client->request('GET', '/api/photos/invalid-uuid/file');
 
         $response = $client->getResponse();
 
-        $this->assertSame(400, $response->getStatusCode());
-        $this->assertStringContainsString('Invalid photo ID', $response->getContent());
+        self::assertSame(400, $response->getStatusCode());
+        self::assertStringContainsString('Invalid photo ID', $response->getContent());
     }
 
     public function testGetPhotoFileReturns304WhenNotModified(): void
     {
-        $client = static::createClient();
+        $client = self::createClient();
         $container = $client->getContainer();
 
         // Create test folder
@@ -175,21 +182,22 @@ final class GetPhotoFileControllerTest extends WebTestCase
         $photoRepo->save($photo);
 
         // Create test file
-        $testFilePath = $this->testStoragePath . '/' . $relativePath;
-        mkdir(dirname($testFilePath), 0755, true);
+        $testFilePath = $this->testStoragePath.'/'.$relativePath;
+        $dir = \dirname($testFilePath);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
         file_put_contents($testFilePath, 'fake image content');
 
-        $container->set('photo.storage_path', $this->testStoragePath);
-
         // First request to get ETag
-        $client->request('GET', '/api/photos/' . $photoId->toString() . '/file');
+        $client->request('GET', '/api/photos/'.$photoId->toString().'/file');
         $response = $client->getResponse();
         $etag = $response->headers->get('ETag');
 
         // Second request with If-None-Match header
         $client->request(
             'GET',
-            '/api/photos/' . $photoId->toString() . '/file',
+            '/api/photos/'.$photoId->toString().'/file',
             [],
             [],
             ['HTTP_IF_NONE_MATCH' => $etag]
@@ -197,7 +205,7 @@ final class GetPhotoFileControllerTest extends WebTestCase
 
         $response = $client->getResponse();
 
-        $this->assertSame(304, $response->getStatusCode());
+        self::assertSame(304, $response->getStatusCode());
     }
 
     private function removeDirectory(string $path): void
@@ -208,7 +216,7 @@ final class GetPhotoFileControllerTest extends WebTestCase
 
         $files = array_diff(scandir($path), ['.', '..']);
         foreach ($files as $file) {
-            $fullPath = $path . '/' . $file;
+            $fullPath = $path.'/'.$file;
             is_dir($fullPath) ? $this->removeDirectory($fullPath) : unlink($fullPath);
         }
         rmdir($path);

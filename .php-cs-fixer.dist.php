@@ -7,7 +7,10 @@ $finder = (new PhpCsFixer\Finder())
 
 return (new PhpCsFixer\Config())
     ->setRules([
-        '@Symfony' => true,
+        '@PhpCsFixer' => true,
+        '@PhpCsFixer:risky' => true,
+        'yoda_style' => false,
     ])
+    ->setRiskyAllowed(true)
     ->setFinder($finder)
 ;

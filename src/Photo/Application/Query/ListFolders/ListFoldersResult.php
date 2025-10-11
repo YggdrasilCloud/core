@@ -11,6 +11,5 @@ final readonly class ListFoldersResult
      */
     public function __construct(
         public array $items,
-    ) {
-    }
+    ) {}
 }

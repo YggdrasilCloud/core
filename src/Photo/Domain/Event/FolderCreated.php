@@ -10,6 +10,5 @@ final readonly class FolderCreated
         public string $folderId,
         public string $folderName,
         public string $ownerId,
-    ) {
-    }
+    ) {}
 }

@@ -13,8 +13,7 @@ final readonly class ListPhotosInFolderHandler
 {
     public function __construct(
         private PhotoRepositoryInterface $photoRepository,
-    ) {
-    }
+    ) {}
 
     public function __invoke(ListPhotosInFolderQuery $query): ListPhotosInFolderResult
     {
@@ -40,9 +39,9 @@ final readonly class ListPhotosInFolderHandler
                 $photo->storedFile()->mimeType(),
                 $photo->storedFile()->sizeInBytes(),
                 $photo->uploadedAt()->format(\DateTimeInterface::ATOM),
-                '/api/photos/' . $photo->id()->toString() . '/file',
+                '/api/photos/'.$photo->id()->toString().'/file',
                 $photo->storedFile()->thumbnailPath() !== null
-                    ? '/api/photos/' . $photo->id()->toString() . '/thumbnail'
+                    ? '/api/photos/'.$photo->id()->toString().'/thumbnail'
                     : null,
             ),
             $photos,

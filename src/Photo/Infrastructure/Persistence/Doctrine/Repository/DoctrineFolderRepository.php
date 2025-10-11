@@ -15,8 +15,7 @@ final readonly class DoctrineFolderRepository implements FolderRepositoryInterfa
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-    ) {
-    }
+    ) {}
 
     public function save(Folder $folder): void
     {
@@ -62,10 +61,11 @@ final readonly class DoctrineFolderRepository implements FolderRepositoryInterfa
     {
         $entities = $this->entityManager
             ->getRepository(FolderEntity::class)
-            ->findAll();
+            ->findAll()
+        ;
 
         return array_map(
-            fn (FolderEntity $entity) => FolderMapper::toDomain($entity),
+            static fn (FolderEntity $entity) => FolderMapper::toDomain($entity),
             $entities
         );
     }

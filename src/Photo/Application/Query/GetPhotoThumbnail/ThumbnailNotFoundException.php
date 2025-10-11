@@ -8,6 +8,6 @@ final class ThumbnailNotFoundException extends \RuntimeException
 {
     public function __construct(string $photoId)
     {
-        parent::__construct(sprintf('Thumbnail not available for photo "%s"', $photoId));
+        parent::__construct(\sprintf('Thumbnail not available for photo "%s"', $photoId));
     }
 }

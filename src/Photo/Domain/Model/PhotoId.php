@@ -8,9 +8,7 @@ use Symfony\Component\Uid\Uuid;
 
 final readonly class PhotoId
 {
-    private function __construct(private string $value)
-    {
-    }
+    private function __construct(private string $value) {}
 
     public static function generate(): self
     {
@@ -20,7 +18,7 @@ final readonly class PhotoId
     public static function fromString(string $id): self
     {
         if (!Uuid::isValid($id)) {
-            throw new \InvalidArgumentException(sprintf('Invalid PhotoId: %s', $id));
+            throw new \InvalidArgumentException(\sprintf('Invalid PhotoId: %s', $id));
         }
 
         return new self($id);

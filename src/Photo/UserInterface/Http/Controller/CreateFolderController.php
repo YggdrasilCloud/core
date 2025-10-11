@@ -17,8 +17,7 @@ final readonly class CreateFolderController
     public function __construct(
         private MessageBusInterface $commandBus,
         private JsonResponder $responder,
-    ) {
-    }
+    ) {}
 
     #[Route('/api/folders', name: 'create_folder', methods: ['POST'])]
     public function __invoke(CreateFolderRequest $request): Response
@@ -36,7 +35,7 @@ final readonly class CreateFolderController
                 'id' => $folderId->toString(),
                 'name' => $request->name,
                 'ownerId' => $request->ownerId,
-            ], sprintf('/api/folders/%s', $folderId->toString()));
+            ], \sprintf('/api/folders/%s', $folderId->toString()));
         } catch (\InvalidArgumentException $e) {
             return $this->responder->badRequest($e->getMessage());
         }

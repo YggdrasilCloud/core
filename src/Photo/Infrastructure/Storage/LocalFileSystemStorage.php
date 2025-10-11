@@ -14,8 +14,7 @@ final readonly class LocalFileSystemStorage implements FileStorageInterface
      */
     public function __construct(
         private string $storagePath,
-    ) {
-    }
+    ) {}
 
     /**
      * @param resource $fileStream
@@ -24,35 +23,35 @@ final readonly class LocalFileSystemStorage implements FileStorageInterface
     {
         // Créer une structure de dossiers par date (YYYY/MM/DD)
         $date = new \DateTimeImmutable();
-        $relativePath = sprintf(
+        $relativePath = \sprintf(
             '%s/%s/%s',
             $date->format('Y'),
             $date->format('m'),
             $date->format('d'),
         );
 
-        $targetDirectory = $this->storagePath . '/' . $relativePath;
+        $targetDirectory = $this->storagePath.'/'.$relativePath;
 
         // Créer le dossier s'il n'existe pas
         if (!is_dir($targetDirectory) && !mkdir($targetDirectory, 0755, true) && !is_dir($targetDirectory)) {
-            throw new \RuntimeException(sprintf('Failed to create directory: %s', $targetDirectory));
+            throw new \RuntimeException(\sprintf('Failed to create directory: %s', $targetDirectory));
         }
 
         // Générer un nom de fichier unique
         $extension = pathinfo($fileName, PATHINFO_EXTENSION);
-        $uniqueFileName = sprintf(
+        $uniqueFileName = \sprintf(
             '%s_%s.%s',
             uniqid('', true),
             bin2hex(random_bytes(8)),
             $extension,
         );
 
-        $targetPath = $targetDirectory . '/' . $uniqueFileName;
+        $targetPath = $targetDirectory.'/'.$uniqueFileName;
 
         // Copier le fichier
         $targetStream = fopen($targetPath, 'w');
         if ($targetStream === false) {
-            throw new \RuntimeException(sprintf('Failed to open target file: %s', $targetPath));
+            throw new \RuntimeException(\sprintf('Failed to open target file: %s', $targetPath));
         }
 
         try {
@@ -64,23 +63,23 @@ final readonly class LocalFileSystemStorage implements FileStorageInterface
         }
 
         // Retourner le chemin relatif
-        return $relativePath . '/' . $uniqueFileName;
+        return $relativePath.'/'.$uniqueFileName;
     }
 
     public function delete(string $storagePath): void
     {
-        $fullPath = $this->storagePath . '/' . $storagePath;
+        $fullPath = $this->storagePath.'/'.$storagePath;
 
         if (file_exists($fullPath)) {
             if (!unlink($fullPath)) {
-                throw new \RuntimeException(sprintf('Failed to delete file: %s', $fullPath));
+                throw new \RuntimeException(\sprintf('Failed to delete file: %s', $fullPath));
             }
         }
     }
 
     public function exists(string $storagePath): bool
     {
-        $fullPath = $this->storagePath . '/' . $storagePath;
+        $fullPath = $this->storagePath.'/'.$storagePath;
 
         return file_exists($fullPath);
     }

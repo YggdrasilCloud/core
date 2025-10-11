@@ -12,8 +12,7 @@ final readonly class UploadPhotoRequest
     private function __construct(
         public UploadedFile $file,
         public string $ownerId,
-    ) {
-    }
+    ) {}
 
     /**
      * Extract and validate upload request data.
@@ -22,7 +21,7 @@ final readonly class UploadPhotoRequest
      */
     public static function fromRequest(Request $request): self
     {
-        /** @var UploadedFile|null $file */
+        /** @var null|UploadedFile $file */
         $file = $request->files->get('photo');
 
         if ($file === null) {

@@ -8,9 +8,7 @@ use Symfony\Component\Uid\Uuid;
 
 final readonly class FolderId
 {
-    private function __construct(private string $value)
-    {
-    }
+    private function __construct(private string $value) {}
 
     public static function generate(): self
     {
@@ -20,7 +18,7 @@ final readonly class FolderId
     public static function fromString(string $id): self
     {
         if (!Uuid::isValid($id)) {
-            throw new \InvalidArgumentException(sprintf('Invalid FolderId: %s', $id));
+            throw new \InvalidArgumentException(\sprintf('Invalid FolderId: %s', $id));
         }
 
         return new self($id);

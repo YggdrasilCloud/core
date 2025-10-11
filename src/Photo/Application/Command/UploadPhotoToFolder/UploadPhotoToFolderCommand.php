@@ -18,6 +18,5 @@ final class UploadPhotoToFolderCommand
         public $fileStream,
         public readonly string $mimeType,
         public readonly int $sizeInBytes,
-    ) {
-    }
+    ) {}
 }

@@ -8,14 +8,12 @@ use Symfony\Component\Uid\Uuid;
 
 final readonly class UserId
 {
-    private function __construct(private string $value)
-    {
-    }
+    private function __construct(private string $value) {}
 
     public static function fromString(string $id): self
     {
         if (!Uuid::isValid($id)) {
-            throw new \InvalidArgumentException(sprintf('Invalid UserId: %s', $id));
+            throw new \InvalidArgumentException(\sprintf('Invalid UserId: %s', $id));
         }
 
         return new self($id);

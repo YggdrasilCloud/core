@@ -8,6 +8,5 @@ final readonly class GetPhotoThumbnailQuery
 {
     public function __construct(
         public string $photoId,
-    ) {
-    }
+    ) {}
 }

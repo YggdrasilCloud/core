@@ -14,11 +14,9 @@ final readonly class CreateFolderRequest
     public function __construct(
         #[Assert\NotBlank(message: 'Folder name is required')]
         public string $name,
-
         #[Assert\NotBlank(message: 'Owner ID is required')]
         public string $ownerId,
-    ) {
-    }
+    ) {}
 
     /**
      * Extract, deserialize and validate create folder request data.
@@ -43,11 +41,12 @@ final readonly class CreateFolderRequest
             // Validate using Symfony Validator constraints
             $violations = $validator->validate($dto);
 
-            if (count($violations) > 0) {
+            if (\count($violations) > 0) {
                 $errors = [];
                 foreach ($violations as $violation) {
                     $errors[] = $violation->getMessage();
                 }
+
                 throw new \InvalidArgumentException(implode(', ', $errors));
             }
 
@@ -55,7 +54,7 @@ final readonly class CreateFolderRequest
         } catch (\InvalidArgumentException $e) {
             throw $e;
         } catch (\Throwable $e) {
-            throw new \InvalidArgumentException('Invalid JSON: ' . $e->getMessage(), 0, $e);
+            throw new \InvalidArgumentException('Invalid JSON: '.$e->getMessage(), 0, $e);
         }
     }
 }

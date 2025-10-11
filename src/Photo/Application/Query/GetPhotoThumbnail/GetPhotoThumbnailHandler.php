@@ -15,8 +15,7 @@ final readonly class GetPhotoThumbnailHandler
     public function __construct(
         private PhotoRepositoryInterface $photoRepository,
         private string $storageBasePath,
-    ) {
-    }
+    ) {}
 
     /**
      * @throws PhotoNotFoundException
@@ -37,7 +36,7 @@ final readonly class GetPhotoThumbnailHandler
             throw new ThumbnailNotFoundException($query->photoId);
         }
 
-        $fullPath = $this->storageBasePath . '/' . $thumbnailPath;
+        $fullPath = $this->storageBasePath.'/'.$thumbnailPath;
 
         if (!file_exists($fullPath)) {
             throw new ThumbnailFileNotFoundException($fullPath);

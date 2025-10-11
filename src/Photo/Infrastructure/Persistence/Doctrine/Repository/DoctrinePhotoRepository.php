@@ -16,8 +16,7 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-    ) {
-    }
+    ) {}
 
     public function save(Photo $photo): void
     {
@@ -63,7 +62,8 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
             ->setMaxResults($safeLimit)
             ->setFirstResult($safeOffset)
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
 
         return array_map(
             static fn (PhotoEntity $entity) => PhotoMapper::toDomain($entity),
@@ -79,7 +79,8 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
             ->where('p.folderId = :folderId')
             ->setParameter('folderId', $folderId->toString())
             ->getQuery()
-            ->getSingleScalarResult();
+            ->getSingleScalarResult()
+        ;
     }
 
     public function remove(Photo $photo): void
