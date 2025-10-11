@@ -54,4 +54,19 @@ final readonly class DoctrineFolderRepository implements FolderRepositoryInterfa
             $this->entityManager->flush();
         }
     }
+
+    /**
+     * @return list<Folder>
+     */
+    public function findAll(): array
+    {
+        $entities = $this->entityManager
+            ->getRepository(FolderEntity::class)
+            ->findAll();
+
+        return array_map(
+            fn (FolderEntity $entity) => FolderMapper::toDomain($entity),
+            $entities
+        );
+    }
 }
