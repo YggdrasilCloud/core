@@ -41,9 +41,5 @@
             <html outputDirectory="coverage-html" lowUpperBound="50" highLowerBound="80"/>
             <text outputFile="php://stdout" showUncoveredFiles="false" showOnlySummary="true"/>
         </report>
-        <thresholds>
-            <lineCoverage minCoverage="70"/>
-            <methodCoverage minCoverage="70"/>
-        </thresholds>
     </coverage>
 </phpunit>

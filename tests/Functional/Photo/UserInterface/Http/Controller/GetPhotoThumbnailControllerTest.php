@@ -43,7 +43,8 @@ final class GetPhotoThumbnailControllerTest extends WebTestCase
 
         // Create test folder
         $folderId = FolderId::generate();
-        $folder = Folder::create($folderId, FolderName::fromString('Test Folder'));
+        $ownerId = UserId::fromString('550e8400-e29b-41d4-a716-446655440000');
+        $folder = Folder::create($folderId, FolderName::fromString('Test Folder'), $ownerId);
         $folderRepo = $container->get(FolderRepositoryInterface::class);
         $folderRepo->save($folder);
 
@@ -105,7 +106,8 @@ final class GetPhotoThumbnailControllerTest extends WebTestCase
 
         // Create test folder
         $folderId = FolderId::generate();
-        $folder = Folder::create($folderId, FolderName::fromString('Test Folder'));
+        $ownerId = UserId::fromString('550e8400-e29b-41d4-a716-446655440000');
+        $folder = Folder::create($folderId, FolderName::fromString('Test Folder'), $ownerId);
         $folderRepo = $container->get(FolderRepositoryInterface::class);
         $folderRepo->save($folder);
 
@@ -139,7 +141,8 @@ final class GetPhotoThumbnailControllerTest extends WebTestCase
 
         // Create test folder
         $folderId = FolderId::generate();
-        $folder = Folder::create($folderId, FolderName::fromString('Test Folder'));
+        $ownerId = UserId::fromString('550e8400-e29b-41d4-a716-446655440000');
+        $folder = Folder::create($folderId, FolderName::fromString('Test Folder'), $ownerId);
         $folderRepo = $container->get(FolderRepositoryInterface::class);
         $folderRepo->save($folder);
 
@@ -192,7 +195,8 @@ final class GetPhotoThumbnailControllerTest extends WebTestCase
 
         // Create test folder
         $folderId = FolderId::generate();
-        $folder = Folder::create($folderId, FolderName::fromString('Test Folder'));
+        $ownerId = UserId::fromString('550e8400-e29b-41d4-a716-446655440000');
+        $folder = Folder::create($folderId, FolderName::fromString('Test Folder'), $ownerId);
         $folderRepo = $container->get(FolderRepositoryInterface::class);
         $folderRepo->save($folder);
 
