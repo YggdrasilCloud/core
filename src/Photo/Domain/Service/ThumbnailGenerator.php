@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Photo\Domain\Service;
 
+use Psr\Log\LoggerInterface;
+
 final readonly class ThumbnailGenerator
 {
     private bool $vipsAvailable;
 
     public function __construct(
         private string $storagePath,
+        private LoggerInterface $logger,
     ) {
         // Détecter si vipsthumbnail est disponible
         $this->vipsAvailable = $this->isVipsAvailable();
@@ -98,6 +101,12 @@ final readonly class ThumbnailGenerator
 
         if ($returnCode !== 0 || !file_exists($thumbnailPath)) {
             // Si vipsthumbnail échoue, fallback sur GD
+            $this->logger->warning('vipsthumbnail failed, falling back to GD', [
+                'source' => $sourceFilePath,
+                'return_code' => $returnCode,
+                'output' => implode("\n", $output),
+            ]);
+
             return $this->generateWithGd($sourceFilePath, $maxWidth, $maxHeight);
         }
 
