@@ -7,8 +7,8 @@ namespace App\Photo\UserInterface\Http\Controller;
 use App\Photo\Application\Command\UploadPhotoToFolder\UploadPhotoToFolderCommand;
 use App\Photo\Domain\Model\PhotoId;
 use App\Photo\Domain\Service\FileValidator;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Photo\UserInterface\Http\Request\UploadPhotoRequest;
+use App\Photo\UserInterface\Http\Responder\JsonResponder;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -19,90 +19,64 @@ final readonly class UploadPhotoController
     public function __construct(
         private MessageBusInterface $commandBus,
         private FileValidator $fileValidator,
+        private JsonResponder $responder,
     ) {
     }
 
     #[Route('/api/folders/{folderId}/photos', name: 'upload_photo', methods: ['POST'])]
     public function __invoke(string $folderId, Request $request): Response
     {
-        /** @var UploadedFile|null $uploadedFile */
-        $uploadedFile = $request->files->get('photo');
-
-        if ($uploadedFile === null) {
-            return new JsonResponse(['error' => 'Missing required file: photo'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $ownerId = $request->request->get('ownerId');
-        if ($ownerId === null) {
-            return new JsonResponse(['error' => 'Missing required field: ownerId'], Response::HTTP_BAD_REQUEST);
-        }
-
-        // Validate file size and type
-        $validationError = $this->fileValidator->validate($uploadedFile);
-        if ($validationError !== null) {
-            return new JsonResponse(['error' => $validationError], Response::HTTP_BAD_REQUEST);
-        }
-
-        $mimeType = $uploadedFile->getMimeType();
-        if ($mimeType === null) {
-            return new JsonResponse(['error' => 'Unable to determine file type'], Response::HTTP_BAD_REQUEST);
-        }
-
-        // Sanitize filename
-        $sanitizedFileName = $this->fileValidator->sanitizeFilename(
-            $uploadedFile->getClientOriginalName()
-        );
-
-        $photoId = PhotoId::generate();
-        $fileStream = null;
-
-        // Future enhancement: detect duplicate uploads by content hash (SHA-256)
-        // - Calculate hash before upload
-        // - Check if photo with same hash exists in folder
-        // - Return 409 Conflict with existing photo ID if duplicate found
-        // This prevents unnecessary storage and provides deduplication
-
         try {
-            $fileStream = fopen($uploadedFile->getPathname(), 'r');
+            $uploadRequest = UploadPhotoRequest::fromRequest($request);
+
+            $validationError = $this->fileValidator->validate($uploadRequest->file);
+            if ($validationError !== null) {
+                return $this->responder->badRequest($validationError);
+            }
+
+            $mimeType = $uploadRequest->file->getMimeType();
+            if ($mimeType === null) {
+                return $this->responder->badRequest('Unable to determine file type');
+            }
+
+            $sanitizedFileName = $this->fileValidator->sanitizeFilename(
+                $uploadRequest->file->getClientOriginalName()
+            );
+
+            $photoId = PhotoId::generate();
+
+            $fileStream = fopen($uploadRequest->file->getPathname(), 'r');
             if ($fileStream === false) {
-                return new JsonResponse(['error' => 'Failed to read uploaded file'], Response::HTTP_INTERNAL_SERVER_ERROR);
+                return $this->responder->serverError('Failed to read uploaded file');
             }
 
             try {
                 $this->commandBus->dispatch(new UploadPhotoToFolderCommand(
                     $photoId->toString(),
                     $folderId,
-                    $ownerId,
+                    $uploadRequest->ownerId,
                     $sanitizedFileName,
                     $fileStream,
                     $mimeType,
-                    $uploadedFile->getSize(),
+                    $uploadRequest->file->getSize(),
                 ));
             } finally {
-                // Ensure file handle is always closed, even if command fails
-                if ($fileStream !== null) {
-                    fclose($fileStream);
-                }
+                fclose($fileStream);
             }
 
-            $response = new JsonResponse([
+            return $this->responder->created([
                 'id' => $photoId->toString(),
                 'folderId' => $folderId,
                 'fileName' => $sanitizedFileName,
                 'mimeType' => $mimeType,
-                'size' => $uploadedFile->getSize(),
-            ], Response::HTTP_CREATED);
-
-            // Add Location header pointing to the folder's photos list
-            $response->headers->set('Location', sprintf('/api/folders/%s/photos', $folderId));
-
-            return $response;
+                'size' => $uploadRequest->file->getSize(),
+            ], sprintf('/api/folders/%s/photos', $folderId));
         } catch (\DomainException $e) {
-            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
+            return $this->responder->notFound($e->getMessage());
         } catch (\InvalidArgumentException $e) {
-            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_BAD_REQUEST);
-        } catch (\Exception $e) {
-            return new JsonResponse(['error' => 'Failed to upload photo'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->responder->badRequest($e->getMessage());
+        } catch (\Exception) {
+            return $this->responder->serverError('Failed to upload photo');
         }
     }
 }
