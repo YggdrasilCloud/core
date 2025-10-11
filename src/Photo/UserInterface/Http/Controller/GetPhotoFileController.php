@@ -10,26 +10,25 @@ use App\Photo\Application\Query\GetPhotoFile\PhotoNotFoundException;
 use App\Photo\UserInterface\Http\Responder\FileResponder;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Messenger\HandleTrait;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Routing\Attribute\Route;
 
 final readonly class GetPhotoFileController
 {
-    use HandleTrait;
-
     public function __construct(
-        MessageBusInterface $queryBus,
+        private MessageBusInterface $queryBus,
         private FileResponder $responder,
     ) {
-        $this->messageBus = $queryBus;
     }
 
     #[Route('/api/photos/{photoId}/file', name: 'get_photo_file', methods: ['GET', 'HEAD'])]
     public function __invoke(string $photoId, Request $request): Response
     {
         try {
-            $model = $this->handle(new GetPhotoFileQuery($photoId));
+            $envelope = $this->queryBus->dispatch(new GetPhotoFileQuery($photoId));
+            $model = $envelope->last(HandledStamp::class)?->getResult();
+
             return $this->responder->respond($model, $request);
         } catch (PhotoNotFoundException $e) {
             return new Response('Photo not found', Response::HTTP_NOT_FOUND);
