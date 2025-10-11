@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Photo\Application\Query\ListFolders;
 
-use App\Photo\Infrastructure\Persistence\Doctrine\Repository\DoctrineFolderRepository;
+use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
 final readonly class ListFoldersHandler
 {
     public function __construct(
-        private DoctrineFolderRepository $folderRepository,
+        private FolderRepositoryInterface $folderRepository,
     ) {
     }
 
