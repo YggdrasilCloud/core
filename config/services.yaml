@@ -45,3 +45,13 @@ services:
     App\Photo\UserInterface\Http\Controller\GetPhotoFileController:
         arguments:
             $storageBasePath: '%photo.storage_path%'
+
+    # Photo Bounded Context - Photo thumbnail controller
+    App\Photo\UserInterface\Http\Controller\GetPhotoThumbnailController:
+        arguments:
+            $storageBasePath: '%photo.storage_path%'
+
+    # Photo Bounded Context - Thumbnail generator
+    App\Photo\Domain\Service\ThumbnailGenerator:
+        arguments:
+            $storagePath: '%photo.storage_path%'
