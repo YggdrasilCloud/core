@@ -13,6 +13,7 @@ use App\Photo\Domain\Model\UserId;
 use App\Photo\Domain\Port\FileStorageInterface;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
+use App\Photo\Domain\Service\ThumbnailGenerator;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -22,6 +23,7 @@ final readonly class UploadPhotoToFolderHandler
         private PhotoRepositoryInterface $photoRepository,
         private FolderRepositoryInterface $folderRepository,
         private FileStorageInterface $fileStorage,
+        private ThumbnailGenerator $thumbnailGenerator,
     ) {
     }
 
@@ -40,13 +42,22 @@ final readonly class UploadPhotoToFolderHandler
         // Stocker le fichier
         $storagePath = $this->fileStorage->store($command->fileStream, $command->fileName);
 
+        // Générer la vignette
+        $thumbnailPath = null;
+        try {
+            $thumbnailPath = $this->thumbnailGenerator->generateThumbnail($storagePath);
+        } catch (\Exception) {
+            // Si la génération échoue, on continue sans vignette
+            // Amélioration future : logger l'erreur
+        }
+
         // Créer l'entité Photo
         $photo = Photo::upload(
             PhotoId::fromString($command->photoId),
             $folderId,
             UserId::fromString($command->ownerId),
             FileName::fromString($command->fileName),
-            StoredFile::create($storagePath, $command->mimeType, $command->sizeInBytes),
+            StoredFile::create($storagePath, $command->mimeType, $command->sizeInBytes, $thumbnailPath),
         );
 
         $this->photoRepository->save($photo);
