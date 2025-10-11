@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/yggdrasilcloud/yggdrasilcloud-runtime:0.1-dev
+    image: yggdrasilcloud-runtime:local-dev-vips
     container_name: yggdrasilcloud_app
     working_dir: /app
     ports:
