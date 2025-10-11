@@ -31,4 +31,19 @@
             <directory>src/*/Infrastructure/Persistence/Doctrine/Entity</directory>
         </exclude>
     </source>
+
+    <coverage includeUncoveredFiles="true"
+              pathCoverage="false"
+              ignoreDeprecatedCodeUnits="true"
+              disableCodeCoverageIgnore="true">
+        <report>
+            <clover outputFile="coverage.xml"/>
+            <html outputDirectory="coverage-html" lowUpperBound="50" highLowerBound="80"/>
+            <text outputFile="php://stdout" showUncoveredFiles="false" showOnlySummary="true"/>
+        </report>
+        <thresholds>
+            <lineCoverage minCoverage="70"/>
+            <methodCoverage minCoverage="70"/>
+        </thresholds>
+    </coverage>
 </phpunit>

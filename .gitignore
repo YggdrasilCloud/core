@@ -16,6 +16,8 @@
 ###> phpunit/phpunit ###
 /phpunit.xml
 /.phpunit.cache/
+/coverage.xml
+/coverage-html/
 ###< phpunit/phpunit ###
 
 ###> composer ###
