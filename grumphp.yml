@@ -20,4 +20,4 @@ grumphp:
 
     environment:
         variables:
-            EXEC_GRUMPHP_COMMAND: 'docker compose exec -T app'
+            EXEC_GRUMPHP_COMMAND: 'docker compose run --rm app'
