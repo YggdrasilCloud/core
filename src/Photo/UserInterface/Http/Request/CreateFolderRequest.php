@@ -35,8 +35,16 @@ final readonly class CreateFolderRequest
         }
 
         try {
-            /** @var self $dto */
-            $dto = $serializer->deserialize($content, self::class, 'json');
+            $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
+
+            if (!\is_array($data)) {
+                throw new \InvalidArgumentException('Invalid JSON: expected object');
+            }
+
+            $dto = new self(
+                name: $data['name'] ?? '',
+                ownerId: $data['ownerId'] ?? '',
+            );
 
             // Validate using Symfony Validator constraints
             $violations = $validator->validate($dto);
@@ -53,8 +61,10 @@ final readonly class CreateFolderRequest
             return $dto;
         } catch (\InvalidArgumentException $e) {
             throw $e;
-        } catch (\Throwable $e) {
+        } catch (\JsonException $e) {
             throw new \InvalidArgumentException('Invalid JSON: '.$e->getMessage(), 0, $e);
+        } catch (\Throwable $e) {
+            throw new \InvalidArgumentException('Request validation failed: '.$e->getMessage(), 0, $e);
         }
     }
 }

@@ -89,4 +89,33 @@ final class FolderNameTest extends TestCase
 
         self::assertFalse($name1->equals($name2));
     }
+
+    public function testFromStringSanitizesForbiddenCharacters(): void
+    {
+        $name = FolderName::fromString('My/Folder\Test:Name*With?Forbidden"Chars<>|');
+
+        // Forbidden characters are replaced with underscores, and trailing underscores are trimmed
+        self::assertSame('My_Folder_Test_Name_With_Forbidden_Chars', $name->toString());
+    }
+
+    public function testFromStringKeepsAccents(): void
+    {
+        $name = FolderName::fromString('Été 2024 - Vacances à l\'étranger');
+
+        self::assertSame('Été 2024 - Vacances à l\'étranger', $name->toString());
+    }
+
+    public function testFromStringNormalizesMultipleSpaces(): void
+    {
+        $name = FolderName::fromString('My    Folder   With     Spaces');
+
+        self::assertSame('My Folder With Spaces', $name->toString());
+    }
+
+    public function testFromStringNormalizesMultipleUnderscores(): void
+    {
+        $name = FolderName::fromString('My____Folder');
+
+        self::assertSame('My_Folder', $name->toString());
+    }
 }

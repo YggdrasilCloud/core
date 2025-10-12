@@ -108,7 +108,8 @@ final class FileValidatorTest extends TestCase
 
         $sanitized = $validator->sanitizeFilename('Héllo Wörld!@#$%^&*()+.png');
 
-        self::assertSame('HelloWorld.png', $sanitized);
+        // Accents are kept, forbidden characters are replaced with underscores, other chars removed
+        self::assertSame('Héllo_Wörld!@#$%^&_()+.png', $sanitized);
     }
 
     public function testSanitizeFilenamePreservesExtension(): void
@@ -134,9 +135,10 @@ final class FileValidatorTest extends TestCase
     {
         $validator = new FileValidator(20971520, []);
 
-        $sanitized = $validator->sanitizeFilename('!@#$%^&*.png');
+        // Special chars that are not forbidden are kept
+        $sanitized = $validator->sanitizeFilename('!@#$%^&.png');
 
-        self::assertSame('file.png', $sanitized);
+        self::assertSame('!@#$%^&.png', $sanitized);
     }
 
     public function testSanitizeFilenameHandlesNoExtension(): void
@@ -148,13 +150,14 @@ final class FileValidatorTest extends TestCase
         self::assertSame('filename', $sanitized);
     }
 
-    public function testSanitizeFilenameNormalizesAccents(): void
+    public function testSanitizeFilenameKeepsAccents(): void
     {
         $validator = new FileValidator(20971520, []);
 
         $sanitized = $validator->sanitizeFilename('Été_été.jpg');
 
-        self::assertSame('Ete_ete.jpg', $sanitized);
+        // Accents are now preserved
+        self::assertSame('Été_été.jpg', $sanitized);
     }
 
     public function testValidateRejectsFileExactlyAtLimit(): void

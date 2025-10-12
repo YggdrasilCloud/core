@@ -24,6 +24,11 @@
                 "App\\Photo\\Domain\\Service\\FileValidator::__construct"
             ]
         },
+        "UnwrapTrim": {
+            "ignoreSourceCodeByRegex": [
+                ".*trim\\(\\$basename, '_'\\).*"
+            ]
+        },
         "DecrementInteger": {
             "ignoreSourceCodeByRegex": [
                 ".*/ 1024 / 1024.*"

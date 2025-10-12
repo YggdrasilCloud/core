@@ -47,11 +47,15 @@ final readonly class FileValidator
         $extension = pathinfo($filename, PATHINFO_EXTENSION);
         $basename = pathinfo($filename, PATHINFO_FILENAME);
 
-        // Remove special characters and normalize
-        $basename = transliterator_transliterate(
-            'Any-Latin; Latin-ASCII; [^A-Za-z0-9_-] remove;',
-            $basename
-        );
+        // Remove only problematic characters for file systems, keep accents
+        // Replace forbidden characters with underscores: / \ : * ? " < > |
+        $basename = preg_replace('/[\/\\\:\*\?\"\<\>\|]/', '_', $basename) ?? $basename;
+
+        // Replace multiple spaces/underscores with single underscore
+        $basename = preg_replace('/[\s_]+/', '_', $basename) ?? $basename;
+
+        // Trim underscores from start and end
+        $basename = trim($basename, '_');
 
         // Limit length and ensure it's not empty
         $basename = substr($basename ?: 'file', 0, 100);

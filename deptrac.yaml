@@ -8,38 +8,38 @@ deptrac:
   layers:
     - name: Controller
       collectors:
-        - type: className
-          regex: .*UserInterface\\Http\\Controller\\.*
+        - type: directory
+          value: src/Photo/UserInterface/Http/Controller
 
     - name: ArgumentResolver
       collectors:
-        - type: className
-          regex: .*UserInterface\\Http\\ArgumentResolver\\.*
+        - type: directory
+          value: src/Photo/UserInterface/Http/ArgumentResolver
 
     - name: Responder
       collectors:
-        - type: className
-          regex: .*UserInterface\\Http\\Responder\\.*
+        - type: directory
+          value: src/Photo/UserInterface/Http/Responder
 
     - name: RequestDTO
       collectors:
-        - type: className
-          regex: .*UserInterface\\Http\\Request\\.*
+        - type: directory
+          value: src/Photo/UserInterface/Http/Request
 
     - name: Application
       collectors:
-        - type: className
-          regex: .*Application\\.*
+        - type: directory
+          value: src/Photo/Application
 
     - name: Domain
       collectors:
-        - type: className
-          regex: .*Domain\\.*
+        - type: directory
+          value: src/Photo/Domain
 
     - name: Infrastructure
       collectors:
-        - type: className
-          regex: .*Infrastructure\\.*
+        - type: directory
+          value: src/Photo/Infrastructure
 
   ruleset:
     # Controller layer rules

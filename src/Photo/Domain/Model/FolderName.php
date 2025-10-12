@@ -10,22 +10,17 @@ final readonly class FolderName
 
     public static function fromString(string $name): self
     {
-        $trimmed = trim($name);
+        $sanitized = self::sanitize($name);
 
-        if ($trimmed === '') {
+        if ($sanitized === '') {
             throw new \InvalidArgumentException('Folder name cannot be empty');
         }
 
-        if (\strlen($trimmed) > 255) {
+        if (\strlen($sanitized) > 255) {
             throw new \InvalidArgumentException('Folder name cannot exceed 255 characters');
         }
 
-        // Interdire les caractères interdits dans les noms de fichiers
-        if (preg_match('/[\/\\\:\*\?\"\<\>\|]/', $trimmed)) {
-            throw new \InvalidArgumentException('Folder name contains invalid characters');
-        }
-
-        return new self($trimmed);
+        return new self($sanitized);
     }
 
     public function toString(): string
@@ -36,5 +31,26 @@ final readonly class FolderName
     public function equals(self $other): bool
     {
         return $this->value === $other->value;
+    }
+
+    /**
+     * Sanitize folder name by removing problematic characters while keeping accents.
+     */
+    private static function sanitize(string $name): string
+    {
+        // Trim whitespace
+        $sanitized = trim($name);
+
+        // Replace forbidden characters with underscores: / \ : * ? " < > |
+        $sanitized = preg_replace('/[\/\\\:\*\?\"\<\>\|]/', '_', $sanitized) ?? $sanitized;
+
+        // Replace multiple spaces with single space
+        $sanitized = preg_replace('/\s+/', ' ', $sanitized) ?? $sanitized;
+
+        // Replace multiple underscores with single underscore
+        $sanitized = preg_replace('/_+/', '_', $sanitized) ?? $sanitized;
+
+        // Trim again to remove any leading/trailing spaces or underscores
+        return trim($sanitized, " \t\n\r\0\x0B_");
     }
 }
