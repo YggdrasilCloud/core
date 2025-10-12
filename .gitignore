@@ -29,3 +29,7 @@
 /infection.log
 /infection-summary.log
 ###< infection/infection ###
+
+###> qossmic/deptrac ###
+/.deptrac.cache
+###< qossmic/deptrac ###
