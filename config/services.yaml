@@ -54,3 +54,8 @@ services:
     App\Photo\Domain\Service\ThumbnailGenerator:
         arguments:
             $storagePath: '%photo.storage_path%'
+
+    # Commands
+    App\Command\SeedTestDataCommand:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
