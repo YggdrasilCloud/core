@@ -21,7 +21,7 @@ use Symfony\Component\Uid\Uuid;
 )]
 final class SeedTestDataCommand extends Command
 {
-    private const DEFAULT_OWNER_ID = 'default-owner-uuid';
+    private const DEFAULT_OWNER_ID = '01936d3e-8f4a-7000-9000-000000000000';
     private const FIXTURES_DIR = '/app/fixtures/photos';
 
     public function __construct(
@@ -77,8 +77,8 @@ final class SeedTestDataCommand extends Command
     private function purgeDatabase(): void
     {
         // Delete in correct order (foreign keys)
-        $this->connection->executeStatement('TRUNCATE TABLE photo CASCADE');
-        $this->connection->executeStatement('TRUNCATE TABLE folder CASCADE');
+        $this->connection->executeStatement('TRUNCATE TABLE photos CASCADE');
+        $this->connection->executeStatement('TRUNCATE TABLE folders CASCADE');
     }
 
     private function createFolder(string $name): string
