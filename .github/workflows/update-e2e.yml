@@ -1,0 +1,38 @@
+name: Update E2E Tests
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  update-e2e-submodule:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tests-e2e repository
+        uses: actions/checkout@v4
+        with:
+          repository: YggdrasilCloud/tests-e2e
+          token: ${{ secrets.PAT_TOKEN }}
+          submodules: true
+
+      - name: Update core-submodule to latest commit
+        run: |
+          cd core-submodule
+          git fetch origin main
+          git checkout ${{ github.sha }}
+          cd ..
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add core-submodule
+
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update core-submodule to ${{ github.sha }}
+
+Automated update triggered by push to YggdrasilCloud/core
+Commit: ${{ github.event.head_commit.message }}"
+            git push origin main
+          fi
