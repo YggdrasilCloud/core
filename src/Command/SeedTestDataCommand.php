@@ -60,7 +60,7 @@ final class SeedTestDataCommand extends Command
         // Step 3: Upload test photos
         $io->section('Uploading test photos...');
         $photosUploaded = $this->uploadTestPhotos($folder1Id);
-        $io->success(sprintf('Uploaded %d test photos to "%s"', $photosUploaded, 'Vacation Photos 2024'));
+        $io->success(\sprintf('Uploaded %d test photos to "%s"', $photosUploaded, 'Vacation Photos 2024'));
 
         $io->success('Test data seeded successfully!');
         $io->info([
@@ -120,7 +120,7 @@ final class SeedTestDataCommand extends Command
                 continue;
             }
 
-            $fileStream = fopen($photoPath, 'rb');
+            $fileStream = fopen($photoPath, 'r');
             if ($fileStream === false) {
                 continue;
             }
