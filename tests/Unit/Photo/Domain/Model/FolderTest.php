@@ -9,6 +9,7 @@ use App\Photo\Domain\Model\Folder;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\FolderName;
 use App\Photo\Domain\Model\UserId;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -29,7 +30,7 @@ final class FolderTest extends TestCase
         self::assertTrue($folder->id()->equals($folderId));
         self::assertTrue($folder->name()->equals($folderName));
         self::assertTrue($folder->ownerId()->equals($ownerId));
-        self::assertInstanceOf(\DateTimeImmutable::class, $folder->createdAt());
+        self::assertInstanceOf(DateTimeImmutable::class, $folder->createdAt());
     }
 
     public function testCreateRecordsFolderCreatedEvent(): void
@@ -63,7 +64,7 @@ final class FolderTest extends TestCase
 
     public function testCreatedAtIsSetToCurrentTime(): void
     {
-        $before = new \DateTimeImmutable();
+        $before = new DateTimeImmutable();
 
         $folder = Folder::create(
             FolderId::generate(),
@@ -71,7 +72,7 @@ final class FolderTest extends TestCase
             UserId::fromString('550e8400-e29b-41d4-a716-446655440000')
         );
 
-        $after = new \DateTimeImmutable();
+        $after = new DateTimeImmutable();
 
         self::assertGreaterThanOrEqual($before->getTimestamp(), $folder->createdAt()->getTimestamp());
         self::assertLessThanOrEqual($after->getTimestamp(), $folder->createdAt()->getTimestamp());

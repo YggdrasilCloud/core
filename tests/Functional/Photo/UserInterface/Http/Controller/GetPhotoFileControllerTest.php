@@ -16,6 +16,8 @@ use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
+use function dirname;
+
 /**
  * @internal
  *
@@ -75,7 +77,7 @@ final class GetPhotoFileControllerTest extends WebTestCase
 
         // Create actual test file on disk
         $testFilePath = $this->testStoragePath.'/'.$relativePath;
-        $dir = \dirname($testFilePath);
+        $dir = dirname($testFilePath);
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
@@ -183,7 +185,7 @@ final class GetPhotoFileControllerTest extends WebTestCase
 
         // Create test file
         $testFilePath = $this->testStoragePath.'/'.$relativePath;
-        $dir = \dirname($testFilePath);
+        $dir = dirname($testFilePath);
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }

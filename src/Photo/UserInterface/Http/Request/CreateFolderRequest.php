@@ -4,10 +4,16 @@ declare(strict_types=1);
 
 namespace App\Photo\UserInterface\Http\Request;
 
+use InvalidArgumentException;
+use JsonException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Throwable;
+
+use function count;
+use function is_array;
 
 final readonly class CreateFolderRequest
 {
@@ -21,7 +27,7 @@ final readonly class CreateFolderRequest
     /**
      * Extract, deserialize and validate create folder request data.
      *
-     * @throws \InvalidArgumentException if validation fails or deserialization fails
+     * @throws InvalidArgumentException if validation fails or deserialization fails
      */
     public static function fromRequest(
         Request $request,
@@ -31,14 +37,14 @@ final readonly class CreateFolderRequest
         $content = $request->getContent();
 
         if (empty($content)) {
-            throw new \InvalidArgumentException('Request body cannot be empty');
+            throw new InvalidArgumentException('Request body cannot be empty');
         }
 
         try {
             $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
 
-            if (!\is_array($data)) {
-                throw new \InvalidArgumentException('Invalid JSON: expected object');
+            if (!is_array($data)) {
+                throw new InvalidArgumentException('Invalid JSON: expected object');
             }
 
             $dto = new self(
@@ -49,22 +55,22 @@ final readonly class CreateFolderRequest
             // Validate using Symfony Validator constraints
             $violations = $validator->validate($dto);
 
-            if (\count($violations) > 0) {
+            if (count($violations) > 0) {
                 $errors = [];
                 foreach ($violations as $violation) {
                     $errors[] = $violation->getMessage();
                 }
 
-                throw new \InvalidArgumentException(implode(', ', $errors));
+                throw new InvalidArgumentException(implode(', ', $errors));
             }
 
             return $dto;
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             throw $e;
-        } catch (\JsonException $e) {
-            throw new \InvalidArgumentException('Invalid JSON: '.$e->getMessage(), 0, $e);
-        } catch (\Throwable $e) {
-            throw new \InvalidArgumentException('Request validation failed: '.$e->getMessage(), 0, $e);
+        } catch (JsonException $e) {
+            throw new InvalidArgumentException('Invalid JSON: '.$e->getMessage(), 0, $e);
+        } catch (Throwable $e) {
+            throw new InvalidArgumentException('Request validation failed: '.$e->getMessage(), 0, $e);
         }
     }
 }

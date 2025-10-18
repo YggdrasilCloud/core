@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Photo\Domain\Model;
 
 use App\Photo\Domain\Model\StoredFile;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -26,7 +27,7 @@ final class StoredFileTest extends TestCase
 
     public function testCreateRejectsEmptyStoragePath(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Storage path cannot be empty');
 
         StoredFile::create('', 'image/jpeg', 1024);
@@ -34,7 +35,7 @@ final class StoredFileTest extends TestCase
 
     public function testCreateRejectsWhitespaceOnlyStoragePath(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Storage path cannot be empty');
 
         StoredFile::create('   ', 'image/jpeg', 1024);
@@ -42,7 +43,7 @@ final class StoredFileTest extends TestCase
 
     public function testCreateRejectsEmptyMimeType(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Mime type cannot be empty');
 
         StoredFile::create('photo.jpg', '', 1024);
@@ -50,7 +51,7 @@ final class StoredFileTest extends TestCase
 
     public function testCreateRejectsWhitespaceOnlyMimeType(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Mime type cannot be empty');
 
         StoredFile::create('photo.jpg', '   ', 1024);
@@ -58,7 +59,7 @@ final class StoredFileTest extends TestCase
 
     public function testCreateRejectsNonImageMimeType(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid mime type for photo: text/plain');
 
         StoredFile::create('photo.jpg', 'text/plain', 1024);
@@ -66,7 +67,7 @@ final class StoredFileTest extends TestCase
 
     public function testCreateRejectsNegativeSize(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('File size cannot be negative');
 
         StoredFile::create('photo.jpg', 'image/jpeg', -1);

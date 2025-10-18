@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Photo\Domain\Model;
 
+use InvalidArgumentException;
+
+use function sprintf;
+
 final readonly class StoredFile
 {
     private function __construct(
@@ -20,19 +24,19 @@ final readonly class StoredFile
         ?string $thumbnailPath = null,
     ): self {
         if (trim($storagePath) === '') {
-            throw new \InvalidArgumentException('Storage path cannot be empty');
+            throw new InvalidArgumentException('Storage path cannot be empty');
         }
 
         if (trim($mimeType) === '') {
-            throw new \InvalidArgumentException('Mime type cannot be empty');
+            throw new InvalidArgumentException('Mime type cannot be empty');
         }
 
         if (!str_starts_with($mimeType, 'image/')) {
-            throw new \InvalidArgumentException(\sprintf('Invalid mime type for photo: %s', $mimeType));
+            throw new InvalidArgumentException(sprintf('Invalid mime type for photo: %s', $mimeType));
         }
 
         if ($sizeInBytes < 0) {
-            throw new \InvalidArgumentException('File size cannot be negative');
+            throw new InvalidArgumentException('File size cannot be negative');
         }
 
         return new self($storagePath, $mimeType, $sizeInBytes, $thumbnailPath);

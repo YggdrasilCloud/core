@@ -6,6 +6,7 @@ namespace App\Photo\Application\Query\ListPhotosInFolder;
 
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
+use DateTimeInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -38,7 +39,7 @@ final readonly class ListPhotosInFolderHandler
                 $photo->storedFile()->storagePath(),
                 $photo->storedFile()->mimeType(),
                 $photo->storedFile()->sizeInBytes(),
-                $photo->uploadedAt()->format(\DateTimeInterface::ATOM),
+                $photo->uploadedAt()->format(DateTimeInterface::ATOM),
                 '/api/photos/'.$photo->id()->toString().'/file',
                 $photo->storedFile()->thumbnailPath() !== null
                     ? '/api/photos/'.$photo->id()->toString().'/thumbnail'

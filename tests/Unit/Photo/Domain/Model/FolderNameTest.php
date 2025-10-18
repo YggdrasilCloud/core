@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Photo\Domain\Model;
 
 use App\Photo\Domain\Model\FolderName;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+
+use function strlen;
 
 /**
  * @internal
@@ -30,7 +33,7 @@ final class FolderNameTest extends TestCase
 
     public function testFromStringRejectsEmptyString(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Folder name cannot be empty');
 
         FolderName::fromString('');
@@ -38,7 +41,7 @@ final class FolderNameTest extends TestCase
 
     public function testFromStringRejectsWhitespaceOnly(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Folder name cannot be empty');
 
         FolderName::fromString('   ');
@@ -46,7 +49,7 @@ final class FolderNameTest extends TestCase
 
     public function testFromStringRejectsTooLongName(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Folder name cannot exceed 255 characters');
 
         FolderName::fromString(str_repeat('a', 256));
@@ -56,7 +59,7 @@ final class FolderNameTest extends TestCase
     {
         $name = FolderName::fromString(str_repeat('a', 255));
 
-        self::assertSame(255, \strlen($name->toString()));
+        self::assertSame(255, strlen($name->toString()));
     }
 
     public function testFromStringAcceptsExactly255Characters(): void
@@ -64,12 +67,12 @@ final class FolderNameTest extends TestCase
         $input = str_repeat('x', 255);
         $name = FolderName::fromString($input);
 
-        self::assertSame(255, \strlen($name->toString()));
+        self::assertSame(255, strlen($name->toString()));
     }
 
     public function testFromStringRejectsExactly256Characters(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
 
         FolderName::fromString(str_repeat('x', 256));
     }

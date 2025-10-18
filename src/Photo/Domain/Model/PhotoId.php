@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Photo\Domain\Model;
 
+use InvalidArgumentException;
 use Symfony\Component\Uid\Uuid;
+
+use function sprintf;
 
 final readonly class PhotoId
 {
@@ -18,7 +21,7 @@ final readonly class PhotoId
     public static function fromString(string $id): self
     {
         if (!Uuid::isValid($id)) {
-            throw new \InvalidArgumentException(\sprintf('Invalid PhotoId: %s', $id));
+            throw new InvalidArgumentException(sprintf('Invalid PhotoId: %s', $id));
         }
 
         return new self($id);

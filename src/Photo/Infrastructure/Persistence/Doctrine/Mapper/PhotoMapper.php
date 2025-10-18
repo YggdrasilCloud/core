@@ -11,6 +11,7 @@ use App\Photo\Domain\Model\PhotoId;
 use App\Photo\Domain\Model\StoredFile;
 use App\Photo\Domain\Model\UserId;
 use App\Photo\Infrastructure\Persistence\Doctrine\Entity\PhotoEntity;
+use ReflectionClass;
 
 final class PhotoMapper
 {
@@ -31,7 +32,7 @@ final class PhotoMapper
 
     public static function toDomain(PhotoEntity $entity): Photo
     {
-        $reflection = new \ReflectionClass(Photo::class);
+        $reflection = new ReflectionClass(Photo::class);
         $photo = $reflection->newInstanceWithoutConstructor();
 
         $idProperty = $reflection->getProperty('id');

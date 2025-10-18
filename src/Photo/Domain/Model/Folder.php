@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Photo\Domain\Model;
 
 use App\Photo\Domain\Event\FolderCreated;
+use DateTimeImmutable;
 
 final class Folder
 {
@@ -15,7 +16,7 @@ final class Folder
         private FolderId $id,
         private FolderName $name,
         private UserId $ownerId,
-        private \DateTimeImmutable $createdAt,
+        private DateTimeImmutable $createdAt,
     ) {}
 
     public static function create(
@@ -27,7 +28,7 @@ final class Folder
             $id,
             $name,
             $ownerId,
-            new \DateTimeImmutable(),
+            new DateTimeImmutable(),
         );
 
         $folder->recordEvent(new FolderCreated(
@@ -59,7 +60,7 @@ final class Folder
         return $this->ownerId;
     }
 
-    public function createdAt(): \DateTimeImmutable
+    public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }

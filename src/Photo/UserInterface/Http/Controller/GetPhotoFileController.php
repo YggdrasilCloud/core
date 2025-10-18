@@ -8,6 +8,7 @@ use App\Photo\Application\Query\GetPhotoFile\FileNotFoundException;
 use App\Photo\Application\Query\GetPhotoFile\GetPhotoFileQuery;
 use App\Photo\Application\Query\GetPhotoFile\PhotoNotFoundException;
 use App\Photo\UserInterface\Http\Responder\FileResponder;
+use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
@@ -42,7 +43,7 @@ final readonly class GetPhotoFileController
                 return new Response('File not found on disk', Response::HTTP_NOT_FOUND);
             }
 
-            if ($originalException instanceof \InvalidArgumentException) {
+            if ($originalException instanceof InvalidArgumentException) {
                 return new Response('Invalid photo ID', Response::HTTP_BAD_REQUEST);
             }
 

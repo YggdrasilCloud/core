@@ -14,7 +14,11 @@ use App\Photo\Domain\Port\FileStorageInterface;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
 use App\Photo\Domain\Service\ThumbnailGenerator;
+use DomainException;
+use Exception;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+
+use function sprintf;
 
 #[AsMessageHandler]
 final readonly class UploadPhotoToFolderHandler
@@ -35,7 +39,7 @@ final readonly class UploadPhotoToFolderHandler
         if ($folder === null) {
             // NOTE: DomainException indicates business rule violation (folder must exist)
             // Future: consider custom FolderNotFoundException for better error handling
-            throw new \DomainException(\sprintf('Folder not found: %s', $command->folderId));
+            throw new DomainException(sprintf('Folder not found: %s', $command->folderId));
         }
 
         // Stocker le fichier
@@ -46,7 +50,7 @@ final readonly class UploadPhotoToFolderHandler
 
         try {
             $thumbnailPath = $this->thumbnailGenerator->generateThumbnail($storagePath);
-        } catch (\Exception) {
+        } catch (Exception) {
             // Si la génération échoue, on continue sans vignette
             // Amélioration future : logger l'erreur
         }

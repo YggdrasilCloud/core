@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace App\Photo\Infrastructure\Storage;
 
 use App\Photo\Domain\Port\FileStorageInterface;
+use DateTimeImmutable;
+use RuntimeException;
+
+use function sprintf;
 
 final readonly class LocalFileSystemStorage implements FileStorageInterface
 {
@@ -22,8 +26,8 @@ final readonly class LocalFileSystemStorage implements FileStorageInterface
     public function store($fileStream, string $fileName): string
     {
         // Créer une structure de dossiers par date (YYYY/MM/DD)
-        $date = new \DateTimeImmutable();
-        $relativePath = \sprintf(
+        $date = new DateTimeImmutable();
+        $relativePath = sprintf(
             '%s/%s/%s',
             $date->format('Y'),
             $date->format('m'),
@@ -34,12 +38,12 @@ final readonly class LocalFileSystemStorage implements FileStorageInterface
 
         // Créer le dossier s'il n'existe pas
         if (!is_dir($targetDirectory) && !mkdir($targetDirectory, 0755, true) && !is_dir($targetDirectory)) {
-            throw new \RuntimeException(\sprintf('Failed to create directory: %s', $targetDirectory));
+            throw new RuntimeException(sprintf('Failed to create directory: %s', $targetDirectory));
         }
 
         // Générer un nom de fichier unique
         $extension = pathinfo($fileName, PATHINFO_EXTENSION);
-        $uniqueFileName = \sprintf(
+        $uniqueFileName = sprintf(
             '%s_%s.%s',
             uniqid('', true),
             bin2hex(random_bytes(8)),
@@ -51,12 +55,12 @@ final readonly class LocalFileSystemStorage implements FileStorageInterface
         // Copier le fichier
         $targetStream = fopen($targetPath, 'w');
         if ($targetStream === false) {
-            throw new \RuntimeException(\sprintf('Failed to open target file: %s', $targetPath));
+            throw new RuntimeException(sprintf('Failed to open target file: %s', $targetPath));
         }
 
         try {
             if (stream_copy_to_stream($fileStream, $targetStream) === false) {
-                throw new \RuntimeException('Failed to copy file stream');
+                throw new RuntimeException('Failed to copy file stream');
             }
         } finally {
             fclose($targetStream);
@@ -72,7 +76,7 @@ final readonly class LocalFileSystemStorage implements FileStorageInterface
 
         if (file_exists($fullPath)) {
             if (!unlink($fullPath)) {
-                throw new \RuntimeException(\sprintf('Failed to delete file: %s', $fullPath));
+                throw new RuntimeException(sprintf('Failed to delete file: %s', $fullPath));
             }
         }
     }

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Photo\Domain\Model;
 
+use InvalidArgumentException;
+
+use function strlen;
+
 final readonly class FolderName
 {
     private function __construct(private string $value) {}
@@ -13,11 +17,11 @@ final readonly class FolderName
         $sanitized = self::sanitize($name);
 
         if ($sanitized === '') {
-            throw new \InvalidArgumentException('Folder name cannot be empty');
+            throw new InvalidArgumentException('Folder name cannot be empty');
         }
 
-        if (\strlen($sanitized) > 255) {
-            throw new \InvalidArgumentException('Folder name cannot exceed 255 characters');
+        if (strlen($sanitized) > 255) {
+            throw new InvalidArgumentException('Folder name cannot exceed 255 characters');
         }
 
         return new self($sanitized);

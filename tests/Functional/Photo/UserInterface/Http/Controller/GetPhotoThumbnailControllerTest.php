@@ -16,6 +16,8 @@ use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
+use function dirname;
+
 /**
  * @internal
  *
@@ -76,7 +78,7 @@ final class GetPhotoThumbnailControllerTest extends WebTestCase
 
         // Create actual thumbnail file on disk
         $testThumbnailPath = $this->testStoragePath.'/'.$thumbnailPath;
-        $dir = \dirname($testThumbnailPath);
+        $dir = dirname($testThumbnailPath);
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
@@ -227,7 +229,7 @@ final class GetPhotoThumbnailControllerTest extends WebTestCase
 
         // Create thumbnail file
         $testThumbnailPath = $this->testStoragePath.'/'.$thumbnailPath;
-        $dir = \dirname($testThumbnailPath);
+        $dir = dirname($testThumbnailPath);
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }

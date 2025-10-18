@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Photo\Domain\Model;
 
+use InvalidArgumentException;
+
+use function strlen;
+
 final readonly class FileName
 {
     private function __construct(private string $value) {}
@@ -13,11 +17,11 @@ final readonly class FileName
         $trimmed = trim($name);
 
         if ($trimmed === '') {
-            throw new \InvalidArgumentException('File name cannot be empty');
+            throw new InvalidArgumentException('File name cannot be empty');
         }
 
-        if (\strlen($trimmed) > 255) {
-            throw new \InvalidArgumentException('File name cannot exceed 255 characters');
+        if (strlen($trimmed) > 255) {
+            throw new InvalidArgumentException('File name cannot exceed 255 characters');
         }
 
         return new self($trimmed);

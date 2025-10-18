@@ -9,6 +9,7 @@ use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\FolderName;
 use App\Photo\Domain\Model\UserId;
 use App\Photo\Infrastructure\Persistence\Doctrine\Entity\FolderEntity;
+use ReflectionClass;
 
 final class FolderMapper
 {
@@ -24,7 +25,7 @@ final class FolderMapper
 
     public static function toDomain(FolderEntity $entity): Folder
     {
-        $reflection = new \ReflectionClass(Folder::class);
+        $reflection = new ReflectionClass(Folder::class);
         $folder = $reflection->newInstanceWithoutConstructor();
 
         $idProperty = $reflection->getProperty('id');

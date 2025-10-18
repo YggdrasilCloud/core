@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Photo\Domain\Model;
 
 use App\Photo\Domain\Event\PhotoUploaded;
+use DateTimeImmutable;
 
 final class Photo
 {
@@ -17,7 +18,7 @@ final class Photo
         private UserId $ownerId,
         private FileName $fileName,
         private StoredFile $storedFile,
-        private \DateTimeImmutable $uploadedAt,
+        private DateTimeImmutable $uploadedAt,
     ) {}
 
     public static function upload(
@@ -33,7 +34,7 @@ final class Photo
             $ownerId,
             $fileName,
             $storedFile,
-            new \DateTimeImmutable(),
+            new DateTimeImmutable(),
         );
 
         $photo->recordEvent(new PhotoUploaded(
@@ -74,7 +75,7 @@ final class Photo
         return $this->storedFile;
     }
 
-    public function uploadedAt(): \DateTimeImmutable
+    public function uploadedAt(): DateTimeImmutable
     {
         return $this->uploadedAt;
     }

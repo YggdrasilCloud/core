@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Photo\Domain\Model;
 
 use App\Photo\Domain\Model\PhotoId;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
@@ -32,7 +33,7 @@ final class PhotoIdTest extends TestCase
 
     public function testFromStringRejectsInvalidUuid(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid PhotoId: invalid-uuid');
 
         PhotoId::fromString('invalid-uuid');

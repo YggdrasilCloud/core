@@ -15,3 +15,16 @@ if (method_exists(Dotenv::class, 'bootEnv')) {
 if ($_SERVER['APP_DEBUG'] ?? false) {
     umask(0000);
 }
+
+// Create test database schema
+if ($_ENV['APP_ENV'] === 'test') {
+    $testDbPath = dirname(__DIR__).'/var/test.db';
+    if (file_exists($testDbPath)) {
+        unlink($testDbPath);
+    }
+
+    passthru(sprintf(
+        'APP_ENV=test php "%s/bin/console" doctrine:schema:create --quiet 2>&1',
+        dirname(__DIR__)
+    ));
+}

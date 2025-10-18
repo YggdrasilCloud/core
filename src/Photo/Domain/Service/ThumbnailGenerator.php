@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Photo\Domain\Service;
 
+use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
+
+use function sprintf;
 
 final readonly class ThumbnailGenerator
 {
@@ -37,7 +41,7 @@ final readonly class ThumbnailGenerator
      *
      * @return string Relative path to generated thumbnail
      *
-     * @throws \InvalidArgumentException if path contains directory traversal
+     * @throws InvalidArgumentException if path contains directory traversal
      */
     public function generateThumbnail(string $sourceFilePath, int $maxWidth = 300, int $maxHeight = 300): string
     {
@@ -53,7 +57,7 @@ final readonly class ThumbnailGenerator
     /**
      * Delete thumbnail file.
      *
-     * @throws \InvalidArgumentException if path contains directory traversal
+     * @throws InvalidArgumentException if path contains directory traversal
      */
     public function deleteThumbnail(string $thumbnailPath): void
     {
@@ -77,12 +81,12 @@ final readonly class ThumbnailGenerator
     /**
      * Validate that path doesn't contain directory traversal attempts.
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     private function validatePath(string $path): void
     {
         if (str_contains($path, '..')) {
-            throw new \InvalidArgumentException('Path cannot contain directory traversal (..)');
+            throw new InvalidArgumentException('Path cannot contain directory traversal (..)');
         }
     }
 
@@ -99,7 +103,7 @@ final readonly class ThumbnailGenerator
         }
 
         if (!file_exists($absolutePath)) {
-            throw new \RuntimeException('Source file not found');
+            throw new RuntimeException('Source file not found');
         }
 
         // Generate thumbnail path
@@ -109,7 +113,7 @@ final readonly class ThumbnailGenerator
 
         // Create thumbnail directory if it doesn't exist
         if (!is_dir($thumbnailDir) && !mkdir($thumbnailDir, 0755, true) && !is_dir($thumbnailDir)) {
-            throw new \RuntimeException('Failed to create thumbnail directory');
+            throw new RuntimeException('Failed to create thumbnail directory');
         }
 
         // vipsthumbnail outputs as filename.jpg by default, we want filename_thumb.jpg
@@ -120,7 +124,7 @@ final readonly class ThumbnailGenerator
         // -s WxH: size (max dimensions, maintains aspect ratio)
         // -o: output with quality settings [Q=85]
         // --eprofile: embed color profile for better color accuracy
-        $command = \sprintf(
+        $command = sprintf(
             'vipsthumbnail %s -s %dx%d -o %s[Q=85] 2>&1',
             escapeshellarg($absolutePath),
             $maxWidth,
@@ -162,7 +166,7 @@ final readonly class ThumbnailGenerator
         // Get image info
         $imageInfo = getimagesize($absolutePath);
         if ($imageInfo === false) {
-            throw new \RuntimeException('Failed to read image info');
+            throw new RuntimeException('Failed to read image info');
         }
 
         [$width, $height, $type] = $imageInfo;
@@ -173,11 +177,11 @@ final readonly class ThumbnailGenerator
             IMAGETYPE_PNG => imagecreatefrompng($absolutePath),
             IMAGETYPE_GIF => imagecreatefromgif($absolutePath),
             IMAGETYPE_WEBP => imagecreatefromwebp($absolutePath),
-            default => throw new \RuntimeException('Unsupported image type'),
+            default => throw new RuntimeException('Unsupported image type'),
         };
 
         if ($sourceImage === false) {
-            throw new \RuntimeException('Failed to create image from file');
+            throw new RuntimeException('Failed to create image from file');
         }
 
         // Calculate new dimensions maintaining aspect ratio
@@ -190,7 +194,7 @@ final readonly class ThumbnailGenerator
         if ($thumbnail === false) {
             imagedestroy($sourceImage);
 
-            throw new \RuntimeException('Failed to create thumbnail');
+            throw new RuntimeException('Failed to create thumbnail');
         }
 
         // Preserve transparency for PNG and GIF
@@ -214,7 +218,7 @@ final readonly class ThumbnailGenerator
             imagedestroy($sourceImage);
             imagedestroy($thumbnail);
 
-            throw new \RuntimeException('Failed to create thumbnail directory');
+            throw new RuntimeException('Failed to create thumbnail directory');
         }
 
         $thumbnailFileName = $pathInfo['filename'].'_thumb.'.$pathInfo['extension'];
@@ -233,7 +237,7 @@ final readonly class ThumbnailGenerator
         imagedestroy($thumbnail);
 
         if (!$saved) {
-            throw new \RuntimeException('Failed to save thumbnail');
+            throw new RuntimeException('Failed to save thumbnail');
         }
 
         // Return relative path from storage root

@@ -8,6 +8,8 @@ use App\Photo\Domain\Service\FileValidator;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
+use function strlen;
+
 /**
  * @internal
  *
@@ -128,7 +130,7 @@ final class FileValidatorTest extends TestCase
 
         $sanitized = $validator->sanitizeFilename($longName);
 
-        self::assertLessThanOrEqual(104, \strlen($sanitized)); // 100 + '.jpg'
+        self::assertLessThanOrEqual(104, strlen($sanitized)); // 100 + '.jpg'
     }
 
     public function testSanitizeFilenameHandlesEmptyBasename(): void
@@ -192,7 +194,7 @@ final class FileValidatorTest extends TestCase
         $sanitized = $validator->sanitizeFilename($longName);
 
         // Should be truncated to 100 chars for basename + extension
-        self::assertLessThanOrEqual(104, \strlen($sanitized));
+        self::assertLessThanOrEqual(104, strlen($sanitized));
     }
 
     public function testFiltersEmptyStringFromMimeTypesAtConstruction(): void
@@ -276,7 +278,7 @@ final class FileValidatorTest extends TestCase
 
         // Should be truncated to 100 + extension
         $basename = pathinfo($sanitized, PATHINFO_FILENAME);
-        self::assertSame(100, \strlen($basename));
+        self::assertSame(100, strlen($basename));
     }
 
     public function testValidatorFiltersEmptyStringsWithArrayValues(): void

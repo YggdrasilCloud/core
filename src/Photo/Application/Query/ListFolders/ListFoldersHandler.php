@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Photo\Application\Query\ListFolders;
 
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
+use DateTimeInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -22,7 +23,7 @@ final readonly class ListFoldersHandler
             static fn ($folder) => new FolderDto(
                 id: $folder->id()->toString(),
                 name: $folder->name()->toString(),
-                createdAt: $folder->createdAt()->format(\DateTimeInterface::ATOM),
+                createdAt: $folder->createdAt()->format(DateTimeInterface::ATOM),
             ),
             $folders
         );

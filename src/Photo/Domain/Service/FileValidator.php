@@ -6,6 +6,10 @@ namespace App\Photo\Domain\Service;
 
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
+use function count;
+use function in_array;
+use function sprintf;
+
 final readonly class FileValidator
 {
     private readonly array $cleanedMimeTypes;
@@ -24,14 +28,14 @@ final readonly class FileValidator
         if ($this->maxFileSize !== -1 && $file->getSize() > $this->maxFileSize) {
             $maxSizeMB = round($this->maxFileSize / 1024 / 1024, 2);
 
-            return \sprintf('File size exceeds maximum allowed size of %s MB', $maxSizeMB);
+            return sprintf('File size exceeds maximum allowed size of %s MB', $maxSizeMB);
         }
 
         // Check MIME type (skip if empty array = no restriction)
-        if (\count($this->cleanedMimeTypes) > 0) {
+        if (count($this->cleanedMimeTypes) > 0) {
             $mimeType = $file->getMimeType();
-            if ($mimeType === null || !\in_array($mimeType, $this->cleanedMimeTypes, true)) {
-                return \sprintf(
+            if ($mimeType === null || !in_array($mimeType, $this->cleanedMimeTypes, true)) {
+                return sprintf(
                     'File type not allowed. Allowed types: %s',
                     implode(', ', $this->cleanedMimeTypes)
                 );

@@ -11,6 +11,7 @@ use App\Photo\Domain\Model\Photo;
 use App\Photo\Domain\Model\PhotoId;
 use App\Photo\Domain\Model\StoredFile;
 use App\Photo\Domain\Model\UserId;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -35,7 +36,7 @@ final class PhotoTest extends TestCase
         self::assertTrue($photo->ownerId()->equals($userId));
         self::assertTrue($photo->fileName()->equals($fileName));
         self::assertSame($storedFile, $photo->storedFile());
-        self::assertInstanceOf(\DateTimeImmutable::class, $photo->uploadedAt());
+        self::assertInstanceOf(DateTimeImmutable::class, $photo->uploadedAt());
     }
 
     public function testUploadRecordsPhotoUploadedEvent(): void
@@ -72,7 +73,7 @@ final class PhotoTest extends TestCase
 
     public function testUploadedAtIsSetToCurrentTime(): void
     {
-        $before = new \DateTimeImmutable();
+        $before = new DateTimeImmutable();
 
         $photo = Photo::upload(
             PhotoId::generate(),
@@ -82,7 +83,7 @@ final class PhotoTest extends TestCase
             StoredFile::create('2025/10/11/photo.jpg', 'image/jpeg', 1024)
         );
 
-        $after = new \DateTimeImmutable();
+        $after = new DateTimeImmutable();
 
         self::assertGreaterThanOrEqual($before->getTimestamp(), $photo->uploadedAt()->getTimestamp());
         self::assertLessThanOrEqual($after->getTimestamp(), $photo->uploadedAt()->getTimestamp());

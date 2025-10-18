@@ -8,9 +8,12 @@ use App\Photo\Application\Command\CreateFolder\CreateFolderCommand;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\UserInterface\Http\Request\CreateFolderRequest;
 use App\Photo\UserInterface\Http\Responder\JsonResponder;
+use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
+
+use function sprintf;
 
 final readonly class CreateFolderController
 {
@@ -35,8 +38,8 @@ final readonly class CreateFolderController
                 'id' => $folderId->toString(),
                 'name' => $request->name,
                 'ownerId' => $request->ownerId,
-            ], \sprintf('/api/folders/%s', $folderId->toString()));
-        } catch (\InvalidArgumentException $e) {
+            ], sprintf('/api/folders/%s', $folderId->toString()));
+        } catch (InvalidArgumentException $e) {
             return $this->responder->badRequest($e->getMessage());
         }
     }

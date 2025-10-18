@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\Infrastructure\Persistence\Doctrine\Entity;
 
+use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -37,7 +38,7 @@ class PhotoEntity
     private ?string $thumbnailPath = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
-    private \DateTimeImmutable $uploadedAt;
+    private DateTimeImmutable $uploadedAt;
 
     public function __construct(
         string $id,
@@ -47,7 +48,7 @@ class PhotoEntity
         string $storagePath,
         string $mimeType,
         int $sizeInBytes,
-        \DateTimeImmutable $uploadedAt,
+        DateTimeImmutable $uploadedAt,
         ?string $thumbnailPath = null,
     ) {
         $this->id = $id;
@@ -96,7 +97,7 @@ class PhotoEntity
         return $this->sizeInBytes;
     }
 
-    public function getUploadedAt(): \DateTimeImmutable
+    public function getUploadedAt(): DateTimeImmutable
     {
         return $this->uploadedAt;
     }

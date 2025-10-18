@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\Infrastructure\Persistence\Doctrine\Entity;
 
+use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -21,13 +22,13 @@ class FolderEntity
     private string $ownerId;
 
     #[ORM\Column(type: 'datetime_immutable')]
-    private \DateTimeImmutable $createdAt;
+    private DateTimeImmutable $createdAt;
 
     public function __construct(
         string $id,
         string $name,
         string $ownerId,
-        \DateTimeImmutable $createdAt,
+        DateTimeImmutable $createdAt,
     ) {
         $this->id = $id;
         $this->name = $name;
@@ -55,7 +56,7 @@ class FolderEntity
         return $this->ownerId;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }

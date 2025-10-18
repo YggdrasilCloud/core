@@ -9,9 +9,14 @@ use App\Photo\Domain\Model\PhotoId;
 use App\Photo\Domain\Service\FileValidator;
 use App\Photo\UserInterface\Http\Request\UploadPhotoRequest;
 use App\Photo\UserInterface\Http\Responder\JsonResponder;
+use DomainException;
+use Exception;
+use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
+
+use function sprintf;
 
 final readonly class UploadPhotoController
 {
@@ -66,12 +71,12 @@ final readonly class UploadPhotoController
                 'fileName' => $sanitizedFileName,
                 'mimeType' => $mimeType,
                 'size' => $uploadRequest->file->getSize(),
-            ], \sprintf('/api/folders/%s/photos', $folderId));
-        } catch (\DomainException $e) {
+            ], sprintf('/api/folders/%s/photos', $folderId));
+        } catch (DomainException $e) {
             return $this->responder->notFound($e->getMessage());
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return $this->responder->badRequest($e->getMessage());
-        } catch (\Exception) {
+        } catch (Exception) {
             return $this->responder->serverError('Failed to upload photo');
         }
     }
