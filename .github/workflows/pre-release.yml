@@ -42,7 +42,7 @@ jobs:
       - name: Get latest frontend tag
         id: get-version
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           if [ "${{ inputs.include_prereleases }}" == "true" ]; then
             # Include all tags
