@@ -1,4 +1,6 @@
 {
+    "name": "yggdrasilcloud/core",
+    "description": "YggdrasilCloud Core API - Photo management backend with hexagonal architecture",
     "type": "project",
     "license": "proprietary",
     "minimum-stability": "stable",
