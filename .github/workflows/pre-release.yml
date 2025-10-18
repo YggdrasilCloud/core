@@ -69,7 +69,7 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.GH_PAT }}
-          repository: YggdrasilCloud/test-e2e
+          repository: YggdrasilCloud/tests-e2e
           event-type: test-core-release
           client-payload: |
             {
@@ -87,7 +87,7 @@ jobs:
         with:
           ref: main
           repo-token: ${{ secrets.GH_PAT }}
-          repo: YggdrasilCloud/test-e2e
+          repo: YggdrasilCloud/tests-e2e
           check-name: 'e2e-tests'
           wait-interval: 10
           allowed-conclusions: success
@@ -124,7 +124,7 @@ jobs:
             - Core: `main` (${{ github.sha }})
             - Frontend: `${{ needs.resolve-frontend-version.outputs.frontend_version }}`
 
-            Full E2E test report: [Workflow run](https://github.com/YggdrasilCloud/test-e2e/actions)
+            Full E2E test report: [Workflow run](https://github.com/YggdrasilCloud/tests-e2e/actions)
 
   post-tag-verification:
     needs: [create-release, resolve-frontend-version]
@@ -135,7 +135,7 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.GH_PAT }}
-          repository: YggdrasilCloud/test-e2e
+          repository: YggdrasilCloud/tests-e2e
           event-type: verify-release
           client-payload: |
             {
