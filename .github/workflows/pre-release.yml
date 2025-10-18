@@ -1,0 +1,146 @@
+name: Pre-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.2.3)'
+        required: true
+        type: string
+      dry_run:
+        description: 'Dry run (execute all steps except tag creation)'
+        required: false
+        type: boolean
+        default: false
+      include_prereleases:
+        description: 'Include pre-releases when resolving frontend version'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  quality-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout core
+        uses: actions/checkout@v4
+
+      - name: Run all quality checks
+        run: |
+          docker compose up -d
+          docker compose exec -T app composer all
+
+      - name: Stop services
+        if: always()
+        run: docker compose down
+
+  resolve-frontend-version:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend_version: ${{ steps.get-version.outputs.version }}
+    steps:
+      - name: Get latest frontend tag
+        id: get-version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ inputs.include_prereleases }}" == "true" ]; then
+            # Include all tags
+            LATEST=$(gh api repos/YggdrasilCloud/frontend/releases/latest --jq '.tag_name')
+          else
+            # Filter out pre-releases (tags containing '-')
+            LATEST=$(gh api repos/YggdrasilCloud/frontend/releases \
+              --jq '[.[] | select(.prerelease == false) | .tag_name] | first')
+          fi
+
+          if [ -z "$LATEST" ]; then
+            echo "No suitable frontend release found"
+            exit 1
+          fi
+
+          echo "Frontend version resolved: $LATEST"
+          echo "version=$LATEST" >> $GITHUB_OUTPUT
+
+  trigger-e2e:
+    needs: [quality-checks, resolve-frontend-version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger E2E tests
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GH_PAT }}
+          repository: YggdrasilCloud/test-e2e
+          event-type: test-core-release
+          client-payload: |
+            {
+              "core_ref": "main",
+              "core_sha": "${{ github.sha }}",
+              "frontend_ref": "${{ needs.resolve-frontend-version.outputs.frontend_version }}",
+              "triggered_by": "core",
+              "target_version": "${{ inputs.version }}",
+              "dry_run": ${{ inputs.dry_run }},
+              "workflow_run_id": "${{ github.run_id }}"
+            }
+
+      - name: Wait for E2E tests to complete
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: main
+          repo-token: ${{ secrets.GH_PAT }}
+          repo: YggdrasilCloud/test-e2e
+          check-name: 'e2e-tests'
+          wait-interval: 10
+          allowed-conclusions: success
+
+  create-release:
+    needs: [trigger-e2e, resolve-frontend-version]
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.dry_run }}
+    steps:
+      - name: Checkout core
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push tag
+        run: |
+          git tag ${{ inputs.version }}
+          git push origin ${{ inputs.version }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          generate_release_notes: true
+          body: |
+            ## Release ${{ inputs.version }}
+
+            **Tested with:**
+            - Core: `main` (${{ github.sha }})
+            - Frontend: `${{ needs.resolve-frontend-version.outputs.frontend_version }}`
+
+            Full E2E test report: [Workflow run](https://github.com/YggdrasilCloud/test-e2e/actions)
+
+  post-tag-verification:
+    needs: [create-release, resolve-frontend-version]
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.dry_run }}
+    steps:
+      - name: Trigger final E2E verification
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GH_PAT }}
+          repository: YggdrasilCloud/test-e2e
+          event-type: verify-release
+          client-payload: |
+            {
+              "core_ref": "${{ inputs.version }}",
+              "frontend_ref": "${{ needs.resolve-frontend-version.outputs.frontend_version }}",
+              "triggered_by": "core",
+              "verification_type": "post-tag"
+            }
