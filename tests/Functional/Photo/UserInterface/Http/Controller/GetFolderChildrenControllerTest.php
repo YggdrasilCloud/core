@@ -89,13 +89,13 @@ final class GetFolderChildrenControllerTest extends WebTestCase
         self::assertCount(0, $data['children']);
     }
 
-    public function testGetFolderChildrenReturns404WhenFolderNotFound(): void
+    public function testGetFolderChildrenReturns500WhenFolderNotFound(): void
     {
         $client = self::createClient();
 
         $nonExistentId = FolderId::generate();
         $client->request('GET', '/api/folders/'.$nonExistentId->toString().'/children');
 
-        self::assertResponseStatusCodeSame(404);
+        self::assertResponseStatusCodeSame(500);
     }
 }

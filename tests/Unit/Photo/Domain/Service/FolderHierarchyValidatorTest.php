@@ -79,7 +79,8 @@ final class FolderHierarchyValidatorTest extends TestCase
 
         $validator->validateParent($folder, $parentId);
 
-        $this->expectNotToPerformAssertions();
+        // No exception thrown = success
+        $this->addToAssertionCount(1);
     }
 
     public function testValidateParentRejectsDescendantAsParent(): void
