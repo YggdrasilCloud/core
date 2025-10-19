@@ -29,6 +29,7 @@ final readonly class ListFoldersController
                 'id' => $folder->id,
                 'name' => $folder->name,
                 'createdAt' => $folder->createdAt,
+                'parentId' => $folder->parentId,
             ],
             $result->items
         );

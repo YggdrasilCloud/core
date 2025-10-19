@@ -10,5 +10,6 @@ final readonly class FolderDto
         public string $id,
         public string $name,
         public string $createdAt,
+        public ?string $parentId = null,
     ) {}
 }

@@ -24,6 +24,7 @@ final readonly class ListFoldersHandler
                 id: $folder->id()->toString(),
                 name: $folder->name()->toString(),
                 createdAt: $folder->createdAt()->format(DateTimeInterface::ATOM),
+                parentId: $folder->parentId()?->toString(),
             ),
             $folders
         );
