@@ -20,6 +20,7 @@ final class FolderMapper
             $folder->name()->toString(),
             $folder->ownerId()->toString(),
             $folder->createdAt(),
+            $folder->parentId()?->toString(),
         );
     }
 
@@ -39,6 +40,12 @@ final class FolderMapper
 
         $createdAtProperty = $reflection->getProperty('createdAt');
         $createdAtProperty->setValue($folder, $entity->getCreatedAt());
+
+        $parentIdProperty = $reflection->getProperty('parentId');
+        $parentIdProperty->setValue(
+            $folder,
+            $entity->getParentId() !== null ? FolderId::fromString($entity->getParentId()) : null,
+        );
 
         $eventsProperty = $reflection->getProperty('domainEvents');
         $eventsProperty->setValue($folder, []);

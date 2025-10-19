@@ -17,18 +17,21 @@ final class Folder
         private FolderName $name,
         private UserId $ownerId,
         private DateTimeImmutable $createdAt,
+        private ?FolderId $parentId = null,
     ) {}
 
     public static function create(
         FolderId $id,
         FolderName $name,
         UserId $ownerId,
+        ?FolderId $parentId = null,
     ): self {
         $folder = new self(
             $id,
             $name,
             $ownerId,
             new DateTimeImmutable(),
+            $parentId,
         );
 
         $folder->recordEvent(new FolderCreated(
@@ -63,6 +66,11 @@ final class Folder
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function parentId(): ?FolderId
+    {
+        return $this->parentId;
     }
 
     /**

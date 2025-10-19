@@ -21,6 +21,9 @@ class FolderEntity
     #[ORM\Column(type: 'string', length: 36)]
     private string $ownerId;
 
+    #[ORM\Column(type: 'string', length: 36, nullable: true)]
+    private ?string $parentId;
+
     #[ORM\Column(type: 'datetime_immutable')]
     private DateTimeImmutable $createdAt;
 
@@ -29,10 +32,12 @@ class FolderEntity
         string $name,
         string $ownerId,
         DateTimeImmutable $createdAt,
+        ?string $parentId = null,
     ) {
         $this->id = $id;
         $this->name = $name;
         $this->ownerId = $ownerId;
+        $this->parentId = $parentId;
         $this->createdAt = $createdAt;
     }
 
@@ -54,6 +59,11 @@ class FolderEntity
     public function getOwnerId(): string
     {
         return $this->ownerId;
+    }
+
+    public function getParentId(): ?string
+    {
+        return $this->parentId;
     }
 
     public function getCreatedAt(): DateTimeImmutable
