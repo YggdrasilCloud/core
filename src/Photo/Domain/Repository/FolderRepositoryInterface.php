@@ -14,4 +14,11 @@ interface FolderRepositoryInterface
     public function findById(FolderId $id): ?Folder;
 
     public function remove(Folder $folder): void;
+
+    /**
+     * Find all folders with given parent ID.
+     *
+     * @return list<Folder>
+     */
+    public function findByParentId(FolderId $parentId): array;
 }
