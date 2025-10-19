@@ -69,4 +69,22 @@ final readonly class DoctrineFolderRepository implements FolderRepositoryInterfa
             $entities
         );
     }
+
+    /**
+     * Find all folders with given parent ID.
+     *
+     * @return list<Folder>
+     */
+    public function findByParentId(FolderId $parentId): array
+    {
+        $entities = $this->entityManager
+            ->getRepository(FolderEntity::class)
+            ->findBy(['parentId' => $parentId->toString()], ['name' => 'ASC'])
+        ;
+
+        return array_map(
+            static fn (FolderEntity $entity) => FolderMapper::toDomain($entity),
+            $entities
+        );
+    }
 }
