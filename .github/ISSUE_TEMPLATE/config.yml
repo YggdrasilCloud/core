@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 Discussion / Question
+    url: https://github.com/YggdrasilCloud/core/discussions
+    about: Poser une question ou discuter d'une idée avant de créer une issue
+  - name: 📚 Documentation
+    url: https://github.com/YggdrasilCloud
+    about: Consulter la documentation du projet

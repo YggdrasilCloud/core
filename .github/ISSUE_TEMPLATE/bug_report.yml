@@ -1,0 +1,124 @@
+name: Bug Report
+description: Reporter un bug ou un comportement inattendu
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de reporter ce bug ! Plus tu donnes de détails, plus vite on pourra le corriger.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description du bug
+      description: Description claire et concise du problème
+      placeholder: Quand je fais X, il se passe Y au lieu de Z
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Composant affecté
+      description: Quelle partie de l'application est concernée ?
+      options:
+        - Backend (API Core)
+        - Frontend (Interface utilisateur)
+        - Infrastructure (Docker, DB, CI/CD)
+        - Tests E2E
+        - Autre
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Étapes pour reproduire
+      description: Comment reproduire le bug de manière fiable ?
+      placeholder: |
+        1. Aller sur la page...
+        2. Cliquer sur...
+        3. Observer l'erreur...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Comportement attendu
+      description: Que devrait-il se passer normalement ?
+      placeholder: Je m'attendais à voir...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Comportement observé
+      description: Qu'est-ce qui se passe réellement ?
+      placeholder: Au lieu de ça, je vois...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Messages d'erreur
+      description: Copie les logs ou messages d'erreur pertinents
+      placeholder: |
+        ```
+        Error: ...
+        Stack trace: ...
+        ```
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environnement
+      description: Informations sur ton environnement
+      placeholder: |
+        - OS: Ubuntu 22.04 / macOS 14 / Windows 11
+        - Navigateur: Chrome 120 / Firefox 121 / Safari 17
+        - Version: v0.1.0
+        - Docker: 24.0.7
+      value: |
+        - OS:
+        - Navigateur:
+        - Version:
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Captures d'écran (optionnel)
+      description: Ajoute des captures d'écran si c'est utile
+      placeholder: Glisse-dépose des images ici
+    validations:
+      required: false
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Sévérité
+      description: Quelle est la gravité du bug ?
+      options:
+        - Mineure (cosmétique, contournement facile)
+        - Moyenne (fonctionnalité dégradée mais utilisable)
+        - Majeure (fonctionnalité bloquée)
+        - Critique (app inutilisable, perte de données)
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Contexte additionnel (optionnel)
+      description: Toute autre information pertinente
+      placeholder: Ce bug apparaît seulement quand...
+    validations:
+      required: false

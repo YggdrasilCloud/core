@@ -1,0 +1,109 @@
+name: Feature Request
+description: Proposer une nouvelle fonctionnalité ou amélioration
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de proposer une amélioration pour YggdrasilCloud !
+
+        **Important** : Les tests doivent faire partie intégrante de chaque développement (backend/frontend).
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Décris la fonctionnalité ou l'amélioration proposée
+      placeholder: Permettre aux utilisateurs de...
+    validations:
+      required: true
+
+  - type: textarea
+    id: user-stories
+    attributes:
+      label: User Stories
+      description: En tant qu'utilisateur, je veux... pour pouvoir...
+      placeholder: |
+        **En tant qu'utilisateur, je veux :**
+        - Faire X
+        - Voir Y
+
+        **Pour pouvoir :**
+        - Accomplir Z
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria-backend
+    attributes:
+      label: Critères d'acceptation - Backend (si applicable)
+      description: |
+        Liste des critères pour le backend (API, Domain, Infrastructure)
+        **Inclure les tests associés**
+      placeholder: |
+        **Fonctionnalités :**
+        - [ ] API POST /endpoint accepte paramètre X
+        - [ ] Règle métier Y dans le Domain
+
+        **Tests inclus :**
+        - [ ] Tests unitaires pour validation Z
+        - [ ] Tests fonctionnels pour cas W
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance-criteria-frontend
+    attributes:
+      label: Critères d'acceptation - Frontend (si applicable)
+      description: |
+        Liste des critères pour le frontend (UI/UX)
+        **Inclure les tests associés**
+      placeholder: |
+        **Fonctionnalités :**
+        - [ ] Affichage de X
+        - [ ] Navigation vers Y
+
+        **Tests inclus :**
+        - [ ] Tests unitaires des composants
+        - [ ] Tests E2E pour scénario Z
+    validations:
+      required: false
+
+  - type: textarea
+    id: technical-considerations
+    attributes:
+      label: Considérations techniques
+      description: Migrations DB, performances, architecture, limites, etc.
+      placeholder: |
+        - **Migration DB** : Ajouter colonne X
+        - **Performance** : Index sur colonne Y
+        - **Architecture** : Nouveau Value Object Z
+    validations:
+      required: false
+
+  - type: textarea
+    id: mockup
+    attributes:
+      label: Mockup / Design (optionnel)
+      description: Captures d'écran, wireframes, ou schémas ASCII
+      placeholder: |
+        ```
+        ┌─────────────────┐
+        │  Interface ici  │
+        └─────────────────┘
+        ```
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priorité
+      description: Quelle est l'importance de cette fonctionnalité ?
+      options:
+        - Basse (nice to have)
+        - Moyenne (amélioration significative)
+        - Haute (fonctionnalité essentielle)
+    validations:
+      required: false
