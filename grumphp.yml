@@ -18,6 +18,10 @@ grumphp:
             memory_limit: '1G'
             triggered_by: ['php']
 
+        phpunit:
+            config_file: phpunit.xml.dist
+            testsuite: ~
+
     environment:
         variables:
             EXEC_GRUMPHP_COMMAND: 'docker compose run --rm app'

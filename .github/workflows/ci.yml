@@ -122,6 +122,18 @@ jobs:
       - name: Run PHPUnit tests
         run: vendor/bin/phpunit --coverage-text --coverage-clover=coverage.xml
 
+      - name: Run Infection mutation testing
+        run: |
+          vendor/bin/infection \
+            --test-framework=phpunit \
+            --threads=4 \
+            --min-msi=80 \
+            --min-covered-msi=90 \
+            --logger-github \
+            --only-covered
+        env:
+          INFECTION_BADGE_API_KEY: ${{ secrets.INFECTION_BADGE_API_KEY }}
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         if: matrix.php-version == '8.3'
