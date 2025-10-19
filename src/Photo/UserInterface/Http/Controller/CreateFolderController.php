@@ -32,12 +32,14 @@ final readonly class CreateFolderController
                 $folderId->toString(),
                 $request->name,
                 $request->ownerId,
+                $request->parentId,
             ));
 
             return $this->responder->created([
                 'id' => $folderId->toString(),
                 'name' => $request->name,
                 'ownerId' => $request->ownerId,
+                'parentId' => $request->parentId,
             ], sprintf('/api/folders/%s', $folderId->toString()));
         } catch (InvalidArgumentException $e) {
             return $this->responder->badRequest($e->getMessage());

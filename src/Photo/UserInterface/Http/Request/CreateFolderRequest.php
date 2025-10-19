@@ -14,6 +14,7 @@ use Throwable;
 
 use function count;
 use function is_array;
+use function is_string;
 
 final readonly class CreateFolderRequest
 {
@@ -22,6 +23,7 @@ final readonly class CreateFolderRequest
         public string $name,
         #[Assert\NotBlank(message: 'Owner ID is required')]
         public string $ownerId,
+        public ?string $parentId = null,
     ) {}
 
     /**
@@ -47,9 +49,26 @@ final readonly class CreateFolderRequest
                 throw new InvalidArgumentException('Invalid JSON: expected object');
             }
 
+            $name = $data['name'] ?? '';
+            $ownerId = $data['ownerId'] ?? '';
+            $parentId = $data['parentId'] ?? null;
+
+            if (!is_string($name)) {
+                throw new InvalidArgumentException('Field "name" must be a string');
+            }
+
+            if (!is_string($ownerId)) {
+                throw new InvalidArgumentException('Field "ownerId" must be a string');
+            }
+
+            if ($parentId !== null && !is_string($parentId)) {
+                throw new InvalidArgumentException('Field "parentId" must be a string or null');
+            }
+
             $dto = new self(
-                name: $data['name'] ?? '',
-                ownerId: $data['ownerId'] ?? '',
+                name: $name,
+                ownerId: $ownerId,
+                parentId: $parentId,
             );
 
             // Validate using Symfony Validator constraints

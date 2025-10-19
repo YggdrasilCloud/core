@@ -24,6 +24,7 @@ final readonly class CreateFolderHandler
             FolderId::fromString($command->folderId),
             FolderName::fromString($command->folderName),
             UserId::fromString($command->ownerId),
+            $command->parentId !== null ? FolderId::fromString($command->parentId) : null,
         );
 
         $this->folderRepository->save($folder);
