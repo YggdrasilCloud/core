@@ -51,9 +51,14 @@ final readonly class StorageFactory
 
         // Built-in: local (core only, no dependencies)
         if ($config->driver === 'local') {
-            $basePath = $config->get('root', '/var/storage');
-            $maxKeyLength = $config->getInt('max_key_length', 1024);
-            $maxComponentLength = $config->getInt('max_component_length', 255);
+            /** @var string $basePath */
+            $basePath = $config->get('root') ?? '/var/storage';
+
+            /** @var int $maxKeyLength */
+            $maxKeyLength = $config->getInt('max_key_length') ?? 1024;
+
+            /** @var int $maxComponentLength */
+            $maxComponentLength = $config->getInt('max_component_length') ?? 255;
 
             return new LocalStorage($basePath, $maxKeyLength, $maxComponentLength);
         }
