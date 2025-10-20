@@ -38,6 +38,7 @@ final readonly class JsonResponder
     public function error(string $title, int $status, ?string $detail = null, array $additional = []): JsonResponse
     {
         $problem = [
+            'type' => 'about:blank',
             'title' => $title,
             'status' => $status,
         ];

@@ -105,6 +105,8 @@ final class GetFolderChildrenControllerTest extends WebTestCase
 
         $data = $this->decodeJsonResponse($client->getResponse());
 
+        self::assertArrayHasKey('type', $data);
+        self::assertSame('about:blank', $data['type']);
         self::assertArrayHasKey('status', $data);
         self::assertSame(Response::HTTP_NOT_FOUND, $data['status']);
         self::assertArrayHasKey('title', $data);
