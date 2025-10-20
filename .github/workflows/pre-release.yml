@@ -25,14 +25,30 @@ jobs:
       - name: Checkout core
         uses: actions/checkout@v4
 
-      - name: Run all quality checks
-        run: |
-          docker compose up -d
-          docker compose exec -T app composer all
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, json, pcntl, posix
+          coverage: xdebug
+          tools: composer:v2
 
-      - name: Stop services
-        if: always()
-        run: docker compose down
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run all quality checks
+        run: composer all
 
   resolve-frontend-version:
     runs-on: ubuntu-latest
