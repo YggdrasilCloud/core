@@ -9,6 +9,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
+use Throwable;
 
 final readonly class ExceptionSubscriber implements EventSubscriberInterface
 {
@@ -42,7 +43,7 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
         }
     }
 
-    private function findFolderNotFoundException(\Throwable $exception): ?FolderNotFoundException
+    private function findFolderNotFoundException(Throwable $exception): ?FolderNotFoundException
     {
         if ($exception instanceof FolderNotFoundException) {
             return $exception;
