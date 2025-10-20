@@ -35,6 +35,7 @@ final class GetFolderPathControllerTest extends WebTestCase
         $grandchildId = FolderId::generate();
         $grandchild = Folder::create($grandchildId, FolderName::fromString('Grandchild'), $ownerId, $childId);
 
+        /** @var FolderRepositoryInterface $folderRepo */
         $folderRepo = $container->get(FolderRepositoryInterface::class);
         $folderRepo->save($root);
         $folderRepo->save($child);
@@ -46,7 +47,9 @@ final class GetFolderPathControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(200);
 
         $response = $client->getResponse();
-        $data = json_decode($response->getContent(), true);
+        $content = $response->getContent();
+        self::assertIsString($content);
+        $data = json_decode($content, true);
 
         self::assertArrayHasKey('path', $data);
         self::assertCount(3, $data['path']);
@@ -73,6 +76,7 @@ final class GetFolderPathControllerTest extends WebTestCase
         $rootId = FolderId::generate();
         $root = Folder::create($rootId, FolderName::fromString('Root'), $ownerId);
 
+        /** @var FolderRepositoryInterface $folderRepo */
         $folderRepo = $container->get(FolderRepositoryInterface::class);
         $folderRepo->save($root);
 
@@ -81,7 +85,9 @@ final class GetFolderPathControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
 
         $response = $client->getResponse();
-        $data = json_decode($response->getContent(), true);
+        $content = $response->getContent();
+        self::assertIsString($content);
+        $data = json_decode($content, true);
 
         self::assertArrayHasKey('path', $data);
         self::assertCount(1, $data['path']);
@@ -100,7 +106,9 @@ final class GetFolderPathControllerTest extends WebTestCase
         self::assertResponseHeaderSame('Content-Type', 'application/problem+json');
 
         $response = $client->getResponse();
-        $data = json_decode($response->getContent(), true);
+        $content = $response->getContent();
+        self::assertIsString($content);
+        $data = json_decode($content, true);
 
         self::assertArrayHasKey('status', $data);
         self::assertSame(404, $data['status']);

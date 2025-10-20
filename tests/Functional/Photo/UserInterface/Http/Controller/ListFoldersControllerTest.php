@@ -36,6 +36,7 @@ final class ListFoldersControllerTest extends WebTestCase
         $childId = FolderId::generate();
         $child = Folder::create($childId, FolderName::fromString('Vacances'), $ownerId, $root1Id);
 
+        /** @var FolderRepositoryInterface $folderRepo */
         $folderRepo = $container->get(FolderRepositoryInterface::class);
         $folderRepo->save($root1);
         $folderRepo->save($root2);
@@ -47,7 +48,9 @@ final class ListFoldersControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(200);
 
         $response = $client->getResponse();
-        $data = json_decode($response->getContent(), true);
+        $content = $response->getContent();
+        self::assertIsString($content);
+        $data = json_decode($content, true);
 
         self::assertIsArray($data);
         self::assertGreaterThanOrEqual(3, count($data));
@@ -92,7 +95,9 @@ final class ListFoldersControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
 
         $response = $client->getResponse();
-        $data = json_decode($response->getContent(), true);
+        $content = $response->getContent();
+        self::assertIsString($content);
+        $data = json_decode($content, true);
 
         self::assertIsArray($data);
     }
@@ -108,6 +113,7 @@ final class ListFoldersControllerTest extends WebTestCase
         $folderId = FolderId::generate();
         $folder = Folder::create($folderId, FolderName::fromString('Test Folder'), $ownerId);
 
+        /** @var FolderRepositoryInterface $folderRepo */
         $folderRepo = $container->get(FolderRepositoryInterface::class);
         $folderRepo->save($folder);
 
@@ -116,7 +122,9 @@ final class ListFoldersControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
 
         $response = $client->getResponse();
-        $data = json_decode($response->getContent(), true);
+        $content = $response->getContent();
+        self::assertIsString($content);
+        $data = json_decode($content, true);
 
         self::assertIsArray($data);
         self::assertNotEmpty($data);
@@ -144,6 +152,7 @@ final class ListFoldersControllerTest extends WebTestCase
         $grandchildId = FolderId::generate();
         $grandchild = Folder::create($grandchildId, FolderName::fromString('Grandchild'), $ownerId, $childId);
 
+        /** @var FolderRepositoryInterface $folderRepo */
         $folderRepo = $container->get(FolderRepositoryInterface::class);
         $folderRepo->save($root);
         $folderRepo->save($child);
@@ -154,7 +163,9 @@ final class ListFoldersControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
 
         $response = $client->getResponse();
-        $data = json_decode($response->getContent(), true);
+        $content = $response->getContent();
+        self::assertIsString($content);
+        $data = json_decode($content, true);
 
         // Find our test folders
         $testFolders = array_filter($data, static fn ($folder) => in_array(
