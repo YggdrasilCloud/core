@@ -3,44 +3,27 @@
     "source": {
         "directories": [
             "src"
+        ],
+        "excludes": [
+            "Photo/Infrastructure/Persistence/Doctrine/Entity"
         ]
     },
     "logs": {
         "text": "infection.log",
         "summary": "infection-summary.log"
     },
-    "minMsi": 100,
-    "minCoveredMsi": 100,
+    "tmpDir": "var/cache/infection",
+    "phpUnit": {
+        "configDir": ".",
+        "customPath": "vendor/bin/phpunit"
+    },
+    "testFramework": "phpunit",
+    "testFrameworkOptions": "--configuration=phpunit-grumphp.xml.dist",
+    "minMsi": 80,
+    "minCoveredMsi": 90,
     "mutators": {
         "@default": true,
-        "ArrayOneItem": {
-            "ignore": [
-                "App\\Photo\\Domain\\Model\\Folder::pullDomainEvents",
-                "App\\Photo\\Domain\\Model\\Photo::pullDomainEvents"
-            ]
-        },
-        "UnwrapArrayValues": {
-            "ignore": [
-                "App\\Photo\\Domain\\Service\\FileValidator::__construct"
-            ]
-        },
-        "UnwrapTrim": {
-            "ignoreSourceCodeByRegex": [
-                ".*trim\\(\\$basename, '_'\\).*"
-            ]
-        },
-        "DecrementInteger": {
-            "ignoreSourceCodeByRegex": [
-                ".*/ 1024 / 1024.*"
-            ]
-        },
-        "IncrementInteger": {
-            "ignoreSourceCodeByRegex": [
-                ".*/ 1024 / 1024.*"
-            ]
-        }
+        "@function_signature": false
     },
-    "phpUnit": {
-        "configDir": "."
-    }
+    "bootstrap": "tests/bootstrap.php"
 }

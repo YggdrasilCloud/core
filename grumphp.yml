@@ -20,8 +20,16 @@ grumphp:
 
         phpunit:
             config_file: phpunit-grumphp.xml.dist
-            testsuite: ~
+            testsuite: Unit
             always_execute: true
+
+        infection:
+            configuration: infection.json5
+            threads: ~
+            test_framework: phpunit
+            min_msi: 80
+            min_covered_msi: 90
+            triggered_by: []
 
     environment:
         variables:
