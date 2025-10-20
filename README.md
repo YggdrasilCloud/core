@@ -263,6 +263,69 @@ Then use it:
 STORAGE_DSN="storage://azure?account=myaccount&container=photos"
 ```
 
+#### Dependency Injection Configuration
+
+The storage system integrates seamlessly with Symfony's DI container using a factory pattern:
+
+**Service Configuration (`config/services.yaml`):**
+
+```yaml
+# Storage Infrastructure - DSN Parser
+App\File\Infrastructure\Storage\StorageDsnParser: ~
+
+# Storage Infrastructure - Factory with Bridge Auto-Discovery
+App\File\Infrastructure\Storage\StorageFactory:
+    arguments:
+        $bridges: !tagged_iterator storage.bridge
+
+# Storage Interface - Created via Factory from DSN
+App\File\Domain\Port\FileStorageInterface:
+    factory: ['@App\File\Infrastructure\Storage\StorageFactory', 'create']
+    arguments:
+        $dsn: '%env(STORAGE_DSN)%'
+```
+
+**How it works:**
+
+1. **StorageFactory** receives all services tagged with `storage.bridge` via `!tagged_iterator`
+2. **FileStorageInterface** is created by calling `StorageFactory::create()` with the `STORAGE_DSN` environment variable
+3. The factory parses the DSN and either:
+   - Returns a built-in adapter (e.g., `LocalStorage` for `local://`)
+   - Searches registered bridges for external drivers (e.g., S3, FTP)
+4. The resolved storage adapter is injected wherever `FileStorageInterface` is type-hinted
+
+**Usage in your code:**
+
+```php
+use App\File\Domain\Port\FileStorageInterface;
+
+final class MyService
+{
+    public function __construct(
+        private FileStorageInterface $storage,
+    ) {}
+
+    public function uploadFile($stream, string $key): void
+    {
+        $this->storage->save($stream, $key, 'image/jpeg', -1);
+    }
+}
+```
+
+No need to know which storage backend is used—switch from local to S3 by simply changing `STORAGE_DSN`!
+
+**Optional: Logger Integration**
+
+LocalStorage supports optional PSR-3 logging for I/O errors (Monolog, etc.):
+
+```yaml
+App\File\Infrastructure\Storage\Adapter\LocalStorage:
+    arguments:
+        $logger: '@monolog.logger'
+```
+
+When configured, I/O errors (file not found, write failures, etc.) are automatically logged with context.
+
 ## Development
 
 ### Run Tests
