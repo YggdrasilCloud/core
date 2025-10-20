@@ -22,7 +22,9 @@ grumphp:
             config_file: phpunit.xml.dist
             testsuite: ~
             always_execute: true
+            order: ~
+            no_coverage: true
 
     environment:
         variables:
-            EXEC_GRUMPHP_COMMAND: 'docker compose run --rm app'
+            EXEC_GRUMPHP_COMMAND: 'docker compose run --rm -e XDEBUG_MODE=off app'
