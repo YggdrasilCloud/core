@@ -9,6 +9,7 @@ use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\FolderName;
 use App\Photo\Domain\Model\UserId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
+use App\Tests\Functional\JsonResponseTestTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
@@ -18,6 +19,8 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  */
 final class ListFoldersControllerTest extends WebTestCase
 {
+    use JsonResponseTestTrait;
+
     public function testListFoldersReturns200WithAllFolders(): void
     {
         $client = self::createClient();
@@ -47,12 +50,8 @@ final class ListFoldersControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertResponseStatusCodeSame(200);
 
-        $response = $client->getResponse();
-        $content = $response->getContent();
-        self::assertIsString($content);
-        $data = json_decode($content, true);
+        $data = $this->decodeJsonResponse($client->getResponse());
 
-        self::assertIsArray($data);
         self::assertGreaterThanOrEqual(3, count($data));
 
         // Find our test folders in the response
@@ -94,12 +93,9 @@ final class ListFoldersControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
 
-        $response = $client->getResponse();
-        $content = $response->getContent();
-        self::assertIsString($content);
-        $data = json_decode($content, true);
+        $data = $this->decodeJsonResponse($client->getResponse());
 
-        self::assertIsArray($data);
+        self::assertNotEmpty($data);
     }
 
     public function testListFoldersIncludesParentIdField(): void
@@ -121,12 +117,8 @@ final class ListFoldersControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
 
-        $response = $client->getResponse();
-        $content = $response->getContent();
-        self::assertIsString($content);
-        $data = json_decode($content, true);
+        $data = $this->decodeJsonResponse($client->getResponse());
 
-        self::assertIsArray($data);
         self::assertNotEmpty($data);
 
         // Verify every folder has the parentId field
@@ -162,10 +154,7 @@ final class ListFoldersControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
 
-        $response = $client->getResponse();
-        $content = $response->getContent();
-        self::assertIsString($content);
-        $data = json_decode($content, true);
+        $data = $this->decodeJsonResponse($client->getResponse());
 
         // Find our test folders
         $testFolders = array_filter($data, static fn ($folder) => in_array(

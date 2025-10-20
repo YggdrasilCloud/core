@@ -9,6 +9,7 @@ use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\FolderName;
 use App\Photo\Domain\Model\UserId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
+use App\Tests\Functional\JsonResponseTestTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -19,6 +20,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class GetFolderPathControllerTest extends WebTestCase
 {
+    use JsonResponseTestTrait;
+
     public function testGetFolderPathReturns200WithFullPath(): void
     {
         $client = self::createClient();
@@ -47,10 +50,7 @@ final class GetFolderPathControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertResponseStatusCodeSame(200);
 
-        $response = $client->getResponse();
-        $content = $response->getContent();
-        self::assertIsString($content);
-        $data = json_decode($content, true);
+        $data = $this->decodeJsonResponse($client->getResponse());
 
         self::assertArrayHasKey('path', $data);
         self::assertCount(3, $data['path']);
@@ -85,10 +85,7 @@ final class GetFolderPathControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
 
-        $response = $client->getResponse();
-        $content = $response->getContent();
-        self::assertIsString($content);
-        $data = json_decode($content, true);
+        $data = $this->decodeJsonResponse($client->getResponse());
 
         self::assertArrayHasKey('path', $data);
         self::assertCount(1, $data['path']);
@@ -106,10 +103,7 @@ final class GetFolderPathControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
         self::assertResponseHeaderSame('Content-Type', 'application/problem+json');
 
-        $response = $client->getResponse();
-        $content = $response->getContent();
-        self::assertIsString($content);
-        $data = json_decode($content, true);
+        $data = $this->decodeJsonResponse($client->getResponse());
 
         self::assertArrayHasKey('status', $data);
         self::assertSame(Response::HTTP_NOT_FOUND, $data['status']);
