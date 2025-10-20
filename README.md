@@ -152,8 +152,115 @@ DATABASE_URL="postgresql://app:secret@postgres:5432/app?serverVersion=16&charset
 PHOTO_MAX_FILE_SIZE=20971520                                    # 20MB (-1 = unlimited)
 PHOTO_ALLOWED_MIME_TYPES="image/jpeg,image/png,image/gif,image/webp"
 
-# Storage
-PHOTO_STORAGE_PATH=/storage/photos
+# Storage (DSN-based configuration - recommended)
+STORAGE_DSN="storage://local?root=%kernel.project_dir%/var/storage&max_key_length=1024&max_component_length=255"
+```
+
+### Storage DSN Configuration
+
+The storage system uses a flexible DSN-based configuration that allows you to switch between different storage backends (local filesystem, S3, FTP, etc.) by simply changing an environment variable.
+
+#### DSN Format
+
+```
+storage://<driver>?<option1>=<value1>&<option2>=<value2>
+```
+
+#### Built-in Driver: Local Filesystem
+
+**Basic usage:**
+```env
+STORAGE_DSN="storage://local?root=/var/storage"
+```
+
+**With custom limits:**
+```env
+STORAGE_DSN="storage://local?root=/var/storage&max_key_length=512&max_component_length=200"
+```
+
+**Options:**
+- `root` (required): Base directory for file storage
+- `max_key_length` (optional, default: 1024): Maximum total key length in characters
+- `max_component_length` (optional, default: 255): Maximum path component length (filesystem limit)
+
+#### External Drivers via Bridges
+
+For cloud storage or other backends, install the corresponding bridge package:
+
+**AWS S3 / MinIO:**
+```bash
+composer require yggdrasilcloud/storage-s3
+```
+```env
+STORAGE_DSN="storage://s3?bucket=my-bucket&region=eu-west-1&key=ACCESS_KEY&secret=SECRET_KEY"
+```
+
+**FTP/FTPS:**
+```bash
+composer require yggdrasilcloud/storage-ftp
+```
+```env
+STORAGE_DSN="storage://ftp?host=ftp.example.com&username=user&password=pass&port=21"
+```
+
+**Google Cloud Storage:**
+```bash
+composer require yggdrasilcloud/storage-gcs
+```
+```env
+STORAGE_DSN="storage://gcs?bucket=my-bucket&projectId=my-project&keyFilePath=/path/to/key.json"
+```
+
+#### Bridge Auto-Discovery
+
+Storage bridges are automatically discovered via Symfony's service tag `storage.bridge`. When you install a bridge package, it registers itself automatically—no manual configuration needed.
+
+**Missing Bridge Error:**
+
+If you try to use a storage driver without installing its bridge, you'll see:
+```
+No storage adapter found for driver "s3".
+To use this driver, install the corresponding bridge package:
+composer require yggdrasilcloud/storage-s3.
+See https://github.com/YggdrasilCloud/core#storage-bridges for available bridges.
+```
+
+#### Creating Custom Bridges
+
+To create your own storage bridge (e.g., for Azure Blob, Dropbox, etc.), implement `StorageBridgeInterface` and tag your service:
+
+```yaml
+# config/services.yaml
+App\Infrastructure\Storage\Bridge\AzureBridge:
+    tags:
+        - { name: storage.bridge }
+```
+
+```php
+use App\File\Infrastructure\Storage\Bridge\StorageBridgeInterface;
+use App\File\Infrastructure\Storage\StorageConfig;
+use App\File\Domain\Port\FileStorageInterface;
+
+final class AzureBridge implements StorageBridgeInterface
+{
+    public function supports(string $driver): bool
+    {
+        return $driver === 'azure';
+    }
+
+    public function create(StorageConfig $config): FileStorageInterface
+    {
+        $account = $config->get('account');
+        $container = $config->get('container');
+
+        return new AzureStorage($account, $container);
+    }
+}
+```
+
+Then use it:
+```env
+STORAGE_DSN="storage://azure?account=myaccount&container=photos"
 ```
 
 ## Development
