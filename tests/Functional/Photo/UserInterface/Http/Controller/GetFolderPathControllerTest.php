@@ -89,13 +89,21 @@ final class GetFolderPathControllerTest extends WebTestCase
         self::assertSame($rootId->toString(), $data['path'][0]['id']);
     }
 
-    public function testGetFolderPathReturns500WhenFolderNotFound(): void
+    public function testGetFolderPathReturns404WhenFolderNotFound(): void
     {
         $client = self::createClient();
 
         $nonExistentId = FolderId::generate();
         $client->request('GET', '/api/folders/'.$nonExistentId->toString().'/path');
 
-        self::assertResponseStatusCodeSame(500);
+        self::assertResponseStatusCodeSame(404);
+
+        $response = $client->getResponse();
+        $data = json_decode($response->getContent(), true);
+
+        self::assertArrayHasKey('status', $data);
+        self::assertSame(404, $data['status']);
+        self::assertArrayHasKey('title', $data);
+        self::assertSame('Not Found', $data['title']);
     }
 }
