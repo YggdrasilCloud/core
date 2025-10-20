@@ -22,13 +22,4 @@
             <directory>tests/Functional</directory>
         </testsuite>
     </testsuites>
-
-    <source>
-        <include>
-            <directory suffix=".php">src</directory>
-        </include>
-        <exclude>
-            <directory>src/*/Infrastructure/Persistence/Doctrine/Entity</directory>
-        </exclude>
-    </source>
 </phpunit>
