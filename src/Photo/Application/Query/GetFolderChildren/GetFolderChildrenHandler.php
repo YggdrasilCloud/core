@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Photo\Application\Query\GetFolderChildren;
 
 use App\Photo\Application\Query\ListFolders\FolderDto;
+use App\Photo\Domain\Exception\FolderNotFoundException;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use DateTimeInterface;
-use InvalidArgumentException;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
@@ -26,7 +26,7 @@ final readonly class GetFolderChildrenHandler
         $parent = $this->folderRepository->findById($parentId);
 
         if ($parent === null) {
-            throw new InvalidArgumentException("Folder not found: {$query->parentId}");
+            throw FolderNotFoundException::withId($parentId);
         }
 
         $folders = $this->folderRepository->findByParentId($parentId);

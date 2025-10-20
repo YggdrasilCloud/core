@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\Application\Query\GetFolderPath;
 
+use App\Photo\Domain\Exception\FolderNotFoundException;
 use App\Photo\Domain\Model\Folder;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
@@ -23,7 +24,7 @@ final readonly class GetFolderPathHandler
         $folder = $this->folderRepository->findById($folderId);
 
         if ($folder === null) {
-            throw new InvalidArgumentException("Folder not found: {$query->folderId}");
+            throw FolderNotFoundException::withId($folderId);
         }
 
         $path = $this->buildPath($folder);
@@ -68,7 +69,7 @@ final readonly class GetFolderPathHandler
             $parent = $this->folderRepository->findById($current->parentId());
 
             if ($parent === null) {
-                throw new InvalidArgumentException("Parent folder not found: {$current->parentId()->toString()}");
+                throw FolderNotFoundException::withId($current->parentId());
             }
 
             $current = $parent;
