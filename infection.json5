@@ -18,7 +18,6 @@
         "customPath": "vendor/bin/phpunit"
     },
     "testFramework": "phpunit",
-    "testFrameworkOptions": "--configuration=phpunit-grumphp.xml.dist",
     "minMsi": 80,
     "minCoveredMsi": 90,
     "mutators": {
