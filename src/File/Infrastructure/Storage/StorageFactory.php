@@ -67,7 +67,8 @@ final readonly class StorageFactory
         throw new LogicException(sprintf(
             'No storage adapter found for driver "%s". '
             .'To use this driver, install the corresponding bridge package: '
-            .'composer require yggdrasilcloud/storage-%s',
+            .'composer require yggdrasilcloud/storage-%s. '
+            .'See https://github.com/YggdrasilCloud/core#storage-bridges for available bridges.',
             $config->driver,
             $config->driver
         ));

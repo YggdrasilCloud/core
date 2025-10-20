@@ -61,7 +61,9 @@ final readonly class LocalStorage implements FileStorageInterface
                 throw new RuntimeException(sprintf('Failed to write file: %s', $fullPath));
             }
 
-            if ($bytesWritten !== $sizeInBytes) {
+            // Verify size if provided (sizeInBytes > 0)
+            // -1 or 0 means unknown size, skip verification
+            if ($sizeInBytes > 0 && $bytesWritten !== $sizeInBytes) {
                 throw new RuntimeException(sprintf(
                     'File size mismatch: expected %d bytes, wrote %d bytes',
                     $sizeInBytes,
@@ -142,6 +144,12 @@ final readonly class LocalStorage implements FileStorageInterface
         // Prevent directory traversal attacks
         if (str_contains($normalizedKey, '..')) {
             throw new InvalidArgumentException(sprintf('Invalid key (directory traversal): %s', $key));
+        }
+
+        // Prevent control characters (security: avoid injection attacks)
+        // \x00-\x1F: ASCII control characters, \x7F: DEL
+        if (preg_match('/[\x00-\x1F\x7F]/', $normalizedKey)) {
+            throw new InvalidArgumentException(sprintf('Invalid key (control characters not allowed): %s', $key));
         }
 
         return $this->basePath.'/'.$normalizedKey;

@@ -64,9 +64,13 @@ interface FileStorageInterface
      * Returns null for storage adapters without public URLs (e.g., local filesystem).
      * Returns a full URL for cloud storage (e.g., S3 presigned URL).
      *
+     * IMPORTANT: For cloud storage, returned URLs may be presigned with limited validity period
+     * (typically 15 minutes to 1 hour). URLs should be used immediately and not cached long-term.
+     * No persistence guarantee is provided - URLs may expire or become invalid.
+     *
      * @param string $key Opaque key identifying the file
      *
-     * @return null|string Public URL or null if not applicable
+     * @return null|string Public URL (may be presigned, time-limited) or null if not applicable
      */
     public function url(string $key): ?string;
 }

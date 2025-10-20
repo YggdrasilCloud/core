@@ -68,6 +68,20 @@ final class LocalStorageTest extends TestCase
     }
 
     #[Test]
+    public function itAcceptsUnknownSizeWithNegativeOne(): void
+    {
+        $content = 'file with unknown size';
+        $stream = $this->createStreamFromString($content);
+        $key = 'files/test/unknown-size.txt';
+
+        // -1 means unknown size, should not throw exception
+        $result = $this->storage->save($stream, $key, 'text/plain', -1);
+
+        self::assertSame($key, $result->key);
+        self::assertFileExists($this->tempDir.'/'.$key);
+    }
+
+    #[Test]
     public function itReadsFileAsStream(): void
     {
         $content = 'stored file content';
@@ -167,6 +181,18 @@ final class LocalStorageTest extends TestCase
         $this->expectExceptionMessage('Invalid key (directory traversal)');
 
         $this->storage->save($stream, 'files/../../../etc/passwd', 'text/plain', 7);
+    }
+
+    #[Test]
+    public function itThrowsExceptionForControlCharactersInKey(): void
+    {
+        $stream = $this->createStreamFromString('content');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid key (control characters not allowed)');
+
+        // Try with null byte (common injection attack)
+        $this->storage->save($stream, "files/test\x00malicious.txt", 'text/plain', 7);
     }
 
     #[Test]
