@@ -88,6 +88,17 @@ final class ListFoldersControllerTest extends WebTestCase
     public function testListFoldersReturnsArrayOfFolders(): void
     {
         $client = self::createClient();
+        $container = $client->getContainer();
+
+        $ownerId = UserId::fromString('550e8400-e29b-41d4-a716-446655440000');
+
+        // Create a test folder to ensure non-empty result
+        $folderId = FolderId::generate();
+        $folder = Folder::create($folderId, FolderName::fromString('Test Folder'), $ownerId);
+
+        /** @var FolderRepositoryInterface $folderRepo */
+        $folderRepo = $container->get(FolderRepositoryInterface::class);
+        $folderRepo->save($folder);
 
         $client->request('GET', '/api/folders');
 
