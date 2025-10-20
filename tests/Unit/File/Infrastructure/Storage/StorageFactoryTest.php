@@ -126,7 +126,6 @@ final class StorageFactoryTest extends TestCase
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('No storage adapter found for driver "s3"');
-        $this->expectExceptionMessage('composer require yggdrasilcloud/storage-s3');
 
         $factory->create('storage://s3?bucket=my-bucket');
     }
@@ -138,7 +137,6 @@ final class StorageFactoryTest extends TestCase
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('No storage adapter found for driver "gcs"');
-        $this->expectExceptionMessage('composer require yggdrasilcloud/storage-gcs');
 
         $factory->create('storage://gcs?bucket=my-bucket&project=my-project');
     }
