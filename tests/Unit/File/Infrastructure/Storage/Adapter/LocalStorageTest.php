@@ -266,6 +266,47 @@ final class LocalStorageTest extends TestCase
         new LocalStorage('');
     }
 
+    #[Test]
+    public function itThrowsExceptionForEmptyKey(): void
+    {
+        $stream = $this->createStreamFromString('content');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Storage key cannot be empty');
+
+        // Only a leading slash, which becomes empty after normalization
+        $this->storage->save($stream, '/', 'text/plain', 7);
+    }
+
+    #[Test]
+    public function itThrowsExceptionForTooLongKey(): void
+    {
+        $stream = $this->createStreamFromString('content');
+
+        // Create a key longer than 1024 chars
+        $longKey = 'files/'.str_repeat('a', 1020);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Storage key too long (max 1024 chars)');
+
+        $this->storage->save($stream, $longKey, 'text/plain', 7);
+    }
+
+    #[Test]
+    public function itThrowsExceptionForTooLongPathComponent(): void
+    {
+        $stream = $this->createStreamFromString('content');
+
+        // Create a path with a component longer than 255 chars
+        $longComponent = str_repeat('x', 256);
+        $key = 'files/'.$longComponent.'/file.txt';
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Path component too long (max 255 chars)');
+
+        $this->storage->save($stream, $key, 'text/plain', 7);
+    }
+
     /**
      * Create a stream from string content.
      *

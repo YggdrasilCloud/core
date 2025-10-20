@@ -141,6 +141,26 @@ final readonly class LocalStorage implements FileStorageInterface
         // Normalize key (remove leading slash if present)
         $normalizedKey = ltrim($key, '/');
 
+        // Prevent empty keys
+        if (empty($normalizedKey)) {
+            throw new InvalidArgumentException('Storage key cannot be empty');
+        }
+
+        // Prevent excessively long keys (filesystem limits)
+        // Max path length: 4096 chars on Linux, but we reserve space for basePath
+        // Max component length: 255 chars per directory/filename
+        if (strlen($normalizedKey) > 1024) {
+            throw new InvalidArgumentException(sprintf('Storage key too long (max 1024 chars): %d chars', strlen($normalizedKey)));
+        }
+
+        // Check each path component doesn't exceed 255 chars (filesystem limit)
+        $components = explode('/', $normalizedKey);
+        foreach ($components as $component) {
+            if (strlen($component) > 255) {
+                throw new InvalidArgumentException(sprintf('Path component too long (max 255 chars): "%s"', $component));
+            }
+        }
+
         // Prevent directory traversal attacks
         if (str_contains($normalizedKey, '..')) {
             throw new InvalidArgumentException(sprintf('Invalid key (directory traversal): %s', $key));
