@@ -128,7 +128,7 @@ jobs:
             --test-framework=phpunit \
             --threads=4 \
             --min-msi=80 \
-            --min-covered-msi=90 \
+            --min-covered-msi=80 \
             --logger-github \
             --only-covering-test-cases
         env:

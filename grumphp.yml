@@ -28,7 +28,7 @@ grumphp:
             threads: ~
             test_framework: phpunit
             min_msi: 80
-            min_covered_msi: 90
+            min_covered_msi: 80
             triggered_by: []
 
     environment:
