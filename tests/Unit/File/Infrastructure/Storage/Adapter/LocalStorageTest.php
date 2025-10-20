@@ -338,6 +338,29 @@ final class LocalStorageTest extends TestCase
     }
 
     #[Test]
+    public function itThrowsExceptionForZeroMaxComponentLength(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Max component length must be positive');
+
+        new LocalStorage('/tmp', 1024, 0);
+    }
+
+    #[Test]
+    public function itAcceptsUnknownSizeWithZero(): void
+    {
+        $content = 'file with unknown size';
+        $stream = $this->createStreamFromString($content);
+        $key = 'files/test/zero-size.txt';
+
+        // 0 means unknown size, should not throw exception
+        $result = $this->storage->save($stream, $key, 'text/plain', 0);
+
+        self::assertSame($key, $result->key);
+        self::assertFileExists($this->tempDir.'/'.$key);
+    }
+
+    #[Test]
     public function itThrowsExceptionForEmptyKey(): void
     {
         $stream = $this->createStreamFromString('content');
