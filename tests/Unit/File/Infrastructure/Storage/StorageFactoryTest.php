@@ -1,0 +1,187 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Unit\File\Infrastructure\Storage;
+
+use App\File\Domain\Port\FileStorageInterface;
+use App\File\Infrastructure\Storage\Adapter\LocalStorage;
+use App\File\Infrastructure\Storage\Bridge\StorageBridgeInterface;
+use App\File\Infrastructure\Storage\StorageConfig;
+use App\File\Infrastructure\Storage\StorageDsnParser;
+use App\File\Infrastructure\Storage\StorageFactory;
+use InvalidArgumentException;
+use LogicException;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
+final class StorageFactoryTest extends TestCase
+{
+    private StorageDsnParser $parser;
+
+    protected function setUp(): void
+    {
+        $this->parser = new StorageDsnParser();
+    }
+
+    #[Test]
+    public function itCreatesLocalStorageAdapterFromDsn(): void
+    {
+        $factory = new StorageFactory($this->parser);
+
+        $storage = $factory->create('storage://local?root=/var/storage');
+
+        self::assertInstanceOf(LocalStorage::class, $storage);
+        self::assertInstanceOf(FileStorageInterface::class, $storage);
+    }
+
+    #[Test]
+    public function itCreatesLocalStorageWithDefaultPathWhenNoRootProvided(): void
+    {
+        $factory = new StorageFactory($this->parser);
+
+        $storage = $factory->create('storage://local');
+
+        self::assertInstanceOf(LocalStorage::class, $storage);
+    }
+
+    #[Test]
+    public function itUsesRegisteredBridgeForS3Driver(): void
+    {
+        $s3Bridge = $this->createMock(StorageBridgeInterface::class);
+        $s3Bridge->method('supports')->willReturnCallback(static fn (string $driver) => $driver === 's3');
+
+        $s3Storage = $this->createMock(FileStorageInterface::class);
+        $s3Bridge->method('create')->willReturn($s3Storage);
+
+        $factory = new StorageFactory($this->parser, [$s3Bridge]);
+
+        $storage = $factory->create('storage://s3?bucket=my-bucket&region=eu-west-1');
+
+        self::assertSame($s3Storage, $storage);
+    }
+
+    #[Test]
+    public function itUsesRegisteredBridgeForFtpDriver(): void
+    {
+        $ftpBridge = $this->createMock(StorageBridgeInterface::class);
+        $ftpBridge->method('supports')->willReturnCallback(static fn (string $driver) => $driver === 'ftp');
+
+        $ftpStorage = $this->createMock(FileStorageInterface::class);
+        $ftpBridge->method('create')->willReturn($ftpStorage);
+
+        $factory = new StorageFactory($this->parser, [$ftpBridge]);
+
+        $storage = $factory->create('storage://ftp?host=ftp.example.com');
+
+        self::assertSame($ftpStorage, $storage);
+    }
+
+    #[Test]
+    public function itSelectsCorrectBridgeFromMultipleRegisteredBridges(): void
+    {
+        $s3Bridge = $this->createMock(StorageBridgeInterface::class);
+        $s3Bridge->method('supports')->willReturnCallback(static fn (string $driver) => $driver === 's3');
+        $s3Storage = $this->createMock(FileStorageInterface::class);
+        $s3Bridge->method('create')->willReturn($s3Storage);
+
+        $ftpBridge = $this->createMock(StorageBridgeInterface::class);
+        $ftpBridge->method('supports')->willReturnCallback(static fn (string $driver) => $driver === 'ftp');
+        $ftpStorage = $this->createMock(FileStorageInterface::class);
+        $ftpBridge->method('create')->willReturn($ftpStorage);
+
+        $factory = new StorageFactory($this->parser, [$s3Bridge, $ftpBridge]);
+
+        $s3Result = $factory->create('storage://s3?bucket=my-bucket');
+        $ftpResult = $factory->create('storage://ftp?host=ftp.example.com');
+
+        self::assertSame($s3Storage, $s3Result);
+        self::assertSame($ftpStorage, $ftpResult);
+    }
+
+    #[Test]
+    public function itPrefersLocalBuiltInAdapterOverBridges(): void
+    {
+        // Even if a bridge supports "local", built-in should be used
+        $fakeBridge = $this->createMock(StorageBridgeInterface::class);
+        $fakeBridge->method('supports')->willReturn(true); // Supports everything
+        $fakeBridge->expects(self::never())->method('create'); // Should never be called
+
+        $factory = new StorageFactory($this->parser, [$fakeBridge]);
+
+        $storage = $factory->create('storage://local?root=/var/storage');
+
+        self::assertInstanceOf(LocalStorage::class, $storage);
+    }
+
+    #[Test]
+    public function itThrowsExceptionWhenNoBridgeSupportsDriver(): void
+    {
+        $factory = new StorageFactory($this->parser);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('No storage adapter found for driver "s3"');
+        $this->expectExceptionMessage('composer require yggdrasilcloud/storage-s3');
+
+        $factory->create('storage://s3?bucket=my-bucket');
+    }
+
+    #[Test]
+    public function itThrowsExceptionWithHelpfulMessageForUnsupportedDriver(): void
+    {
+        $factory = new StorageFactory($this->parser);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('No storage adapter found for driver "gcs"');
+        $this->expectExceptionMessage('composer require yggdrasilcloud/storage-gcs');
+
+        $factory->create('storage://gcs?bucket=my-bucket&project=my-project');
+    }
+
+    #[Test]
+    public function itPassesCorrectConfigToBridge(): void
+    {
+        $bridge = $this->createMock(StorageBridgeInterface::class);
+        $bridge->method('supports')->willReturn(true);
+
+        $bridge->expects(self::once())
+            ->method('create')
+            ->with(self::callback(static function (StorageConfig $config) {
+                return $config->driver === 's3'
+                    && $config->get('bucket') === 'my-bucket'
+                    && $config->get('region') === 'eu-west-1';
+            }))
+            ->willReturn($this->createMock(FileStorageInterface::class))
+        ;
+
+        $factory = new StorageFactory($this->parser, [$bridge]);
+
+        $factory->create('storage://s3?bucket=my-bucket&region=eu-west-1');
+    }
+
+    #[Test]
+    public function itPropagatesExceptionsFromParser(): void
+    {
+        $factory = new StorageFactory($this->parser);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('DSN scheme must be "storage"');
+
+        $factory->create('not a valid dsn:::');
+    }
+
+    #[Test]
+    public function itWorksWithEmptyBridgesIterable(): void
+    {
+        $factory = new StorageFactory($this->parser, []);
+
+        $storage = $factory->create('storage://local?root=/tmp');
+
+        self::assertInstanceOf(LocalStorage::class, $storage);
+    }
+}
