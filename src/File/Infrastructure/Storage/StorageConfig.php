@@ -49,4 +49,47 @@ final readonly class StorageConfig
     {
         return isset($this->options[$key]);
     }
+
+    /**
+     * Get option value as integer with optional default.
+     *
+     * @param string   $key     Option key
+     * @param null|int $default Default value if key not found
+     */
+    public function getInt(string $key, ?int $default = null): ?int
+    {
+        $value = $this->get($key);
+
+        if ($value === null) {
+            return $default;
+        }
+
+        return (int) $value;
+    }
+
+    /**
+     * Get option value as boolean with optional default.
+     *
+     * Accepts: "1", "true", "yes", "on" (case-insensitive) for true.
+     * Accepts: "0", "false", "no", "off" (case-insensitive) for false.
+     *
+     * @param string    $key     Option key
+     * @param null|bool $default Default value if key not found
+     */
+    public function getBool(string $key, ?bool $default = null): ?bool
+    {
+        $value = $this->get($key);
+
+        if ($value === null) {
+            return $default;
+        }
+
+        $normalized = strtolower($value);
+
+        return match ($normalized) {
+            '1', 'true', 'yes', 'on' => true,
+            '0', 'false', 'no', 'off' => false,
+            default => (bool) $value,
+        };
+    }
 }
