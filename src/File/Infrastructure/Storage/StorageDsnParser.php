@@ -50,10 +50,7 @@ final readonly class StorageDsnParser
 
         // Extract driver from host
         if (!isset($parsed['host']) || empty($parsed['host'])) {
-            throw new InvalidArgumentException(sprintf(
-                'DSN must specify a driver as host (e.g., storage://local), got: %s',
-                $dsn
-            ));
+            throw new InvalidArgumentException('Invalid DSN format');
         }
 
         $driver = $parsed['host'];

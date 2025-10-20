@@ -192,8 +192,10 @@ For cloud storage or other backends, install the corresponding bridge package:
 composer require yggdrasilcloud/storage-s3
 ```
 ```env
-STORAGE_DSN="storage://s3?bucket=my-bucket&region=eu-west-1&key=ACCESS_KEY&secret=SECRET_KEY"
+STORAGE_DSN="storage://s3?bucket=my-bucket&region=eu-west-1"
 ```
+
+**Note:** Set your S3 credentials using the standard environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`. Do **not** include credentials in the DSN.
 
 **FTP/FTPS:**
 ```bash
