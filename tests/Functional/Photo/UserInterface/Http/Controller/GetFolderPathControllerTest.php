@@ -10,6 +10,7 @@ use App\Photo\Domain\Model\FolderName;
 use App\Photo\Domain\Model\UserId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @internal
@@ -102,7 +103,7 @@ final class GetFolderPathControllerTest extends WebTestCase
         $nonExistentId = FolderId::generate();
         $client->request('GET', '/api/folders/'.$nonExistentId->toString().'/path');
 
-        self::assertResponseStatusCodeSame(404);
+        self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
         self::assertResponseHeaderSame('Content-Type', 'application/problem+json');
 
         $response = $client->getResponse();
@@ -111,7 +112,7 @@ final class GetFolderPathControllerTest extends WebTestCase
         $data = json_decode($content, true);
 
         self::assertArrayHasKey('status', $data);
-        self::assertSame(404, $data['status']);
+        self::assertSame(Response::HTTP_NOT_FOUND, $data['status']);
         self::assertArrayHasKey('title', $data);
         self::assertSame('Not Found', $data['title']);
     }
