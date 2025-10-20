@@ -8,6 +8,8 @@ use App\File\Domain\Model\StoredObject;
 use App\File\Domain\Port\FileStorageInterface;
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use RuntimeException;
 
 /**
@@ -23,15 +25,19 @@ final readonly class LocalStorage implements FileStorageInterface
     private const DEFAULT_MAX_KEY_LENGTH = 1024;
     private const DEFAULT_MAX_COMPONENT_LENGTH = 255;
 
+    private readonly LoggerInterface $logger;
+
     /**
-     * @param string $basePath           Base directory for file storage (e.g., "/var/storage")
-     * @param int    $maxKeyLength       Maximum total key length (default: 1024 chars)
-     * @param int    $maxComponentLength Maximum path component length (default: 255 chars, filesystem limit)
+     * @param string               $basePath           Base directory for file storage (e.g., "/var/storage")
+     * @param int                  $maxKeyLength       Maximum total key length (default: 1024 chars)
+     * @param int                  $maxComponentLength Maximum path component length (default: 255 chars, filesystem limit)
+     * @param null|LoggerInterface $logger             Optional PSR-3 logger for I/O errors
      */
     public function __construct(
         private string $basePath,
         private int $maxKeyLength = self::DEFAULT_MAX_KEY_LENGTH,
         private int $maxComponentLength = self::DEFAULT_MAX_COMPONENT_LENGTH,
+        ?LoggerInterface $logger = null,
     ) {
         if (empty($this->basePath)) {
             throw new InvalidArgumentException('Base path cannot be empty');
@@ -44,6 +50,8 @@ final readonly class LocalStorage implements FileStorageInterface
         if ($this->maxComponentLength <= 0) {
             throw new InvalidArgumentException('Max component length must be positive');
         }
+
+        $this->logger = $logger ?? new NullLogger();
     }
 
     public function save($stream, string $key, string $mimeType, int $sizeInBytes): StoredObject
@@ -58,14 +66,20 @@ final readonly class LocalStorage implements FileStorageInterface
         // Create directory if it doesn't exist
         if (!is_dir($directory)) {
             if (!mkdir($directory, 0755, true) && !is_dir($directory)) {
-                throw new RuntimeException(sprintf('Failed to create directory: %s', $directory));
+                $error = sprintf('Failed to create directory: %s', $directory);
+                $this->logger->error($error, ['key' => $key, 'directory' => $directory]);
+
+                throw new RuntimeException($error);
             }
         }
 
         // Open destination file
         $destination = fopen($fullPath, 'w');
         if ($destination === false) {
-            throw new RuntimeException(sprintf('Failed to open file for writing: %s', $fullPath));
+            $error = sprintf('Failed to open file for writing: %s', $fullPath);
+            $this->logger->error($error, ['key' => $key, 'path' => $fullPath]);
+
+            throw new RuntimeException($error);
         }
 
         try {
@@ -73,17 +87,27 @@ final readonly class LocalStorage implements FileStorageInterface
             $bytesWritten = stream_copy_to_stream($stream, $destination);
 
             if ($bytesWritten === false) {
-                throw new RuntimeException(sprintf('Failed to write file: %s', $fullPath));
+                $error = sprintf('Failed to write file: %s', $fullPath);
+                $this->logger->error($error, ['key' => $key, 'path' => $fullPath]);
+
+                throw new RuntimeException($error);
             }
 
             // Verify size if provided (sizeInBytes > 0)
             // -1 or 0 means unknown size, skip verification
             if ($sizeInBytes > 0 && $bytesWritten !== $sizeInBytes) {
-                throw new RuntimeException(sprintf(
+                $error = sprintf(
                     'File size mismatch: expected %d bytes, wrote %d bytes',
                     $sizeInBytes,
                     $bytesWritten
-                ));
+                );
+                $this->logger->warning($error, [
+                    'key' => $key,
+                    'expected' => $sizeInBytes,
+                    'actual' => $bytesWritten,
+                ]);
+
+                throw new RuntimeException($error);
             }
         } finally {
             fclose($destination);
@@ -101,17 +125,26 @@ final readonly class LocalStorage implements FileStorageInterface
         $fullPath = $this->getFullPath($key);
 
         if (!file_exists($fullPath)) {
-            throw new RuntimeException(sprintf('File not found: %s', $key));
+            $error = sprintf('File not found: %s', $key);
+            $this->logger->warning($error, ['key' => $key, 'path' => $fullPath]);
+
+            throw new RuntimeException($error);
         }
 
         if (!is_readable($fullPath)) {
-            throw new RuntimeException(sprintf('File not readable: %s', $key));
+            $error = sprintf('File not readable: %s', $key);
+            $this->logger->error($error, ['key' => $key, 'path' => $fullPath]);
+
+            throw new RuntimeException($error);
         }
 
         $stream = fopen($fullPath, 'r');
 
         if ($stream === false) {
-            throw new RuntimeException(sprintf('Failed to open file for reading: %s', $key));
+            $error = sprintf('Failed to open file for reading: %s', $key);
+            $this->logger->error($error, ['key' => $key, 'path' => $fullPath]);
+
+            throw new RuntimeException($error);
         }
 
         return $stream;
@@ -127,8 +160,13 @@ final readonly class LocalStorage implements FileStorageInterface
         }
 
         if (!unlink($fullPath)) {
-            throw new RuntimeException(sprintf('Failed to delete file: %s', $key));
+            $error = sprintf('Failed to delete file: %s', $key);
+            $this->logger->error($error, ['key' => $key, 'path' => $fullPath]);
+
+            throw new RuntimeException($error);
         }
+
+        $this->logger->info('File deleted successfully', ['key' => $key]);
     }
 
     public function exists(string $key): bool
