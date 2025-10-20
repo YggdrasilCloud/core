@@ -267,6 +267,77 @@ final class LocalStorageTest extends TestCase
     }
 
     #[Test]
+    public function itThrowsExceptionForNegativeMaxKeyLength(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Max key length must be positive');
+
+        new LocalStorage('/tmp', -1);
+    }
+
+    #[Test]
+    public function itThrowsExceptionForZeroMaxKeyLength(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Max key length must be positive');
+
+        new LocalStorage('/tmp', 0);
+    }
+
+    #[Test]
+    public function itThrowsExceptionForNegativeMaxComponentLength(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Max component length must be positive');
+
+        new LocalStorage('/tmp', 1024, -1);
+    }
+
+    #[Test]
+    public function itAcceptsCustomMaxKeyLength(): void
+    {
+        $customStorage = new LocalStorage($this->tempDir, 512, 255);
+        $stream = $this->createStreamFromString('content');
+
+        // Key with 510 chars total (but each component under 255)
+        // files/ (6) + a*200 (200) + / (1) + b*200 (200) + / (1) + file.txt (8) = 416 chars
+        $validKey = 'files/'.str_repeat('a', 200).'/'.str_repeat('b', 200).'/file.txt';
+        $result = $customStorage->save($stream, $validKey, 'text/plain', 7);
+
+        self::assertSame($validKey, $result->key);
+    }
+
+    #[Test]
+    public function itRespectsCustomMaxKeyLength(): void
+    {
+        $customStorage = new LocalStorage($this->tempDir, 50, 255);
+        $stream = $this->createStreamFromString('content');
+
+        // Key with 60 chars should fail with custom limit of 50
+        $longKey = str_repeat('a', 60);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Storage key too long (max 50 chars)');
+
+        $customStorage->save($stream, $longKey, 'text/plain', 7);
+    }
+
+    #[Test]
+    public function itRespectsCustomMaxComponentLength(): void
+    {
+        $customStorage = new LocalStorage($this->tempDir, 1024, 10);
+        $stream = $this->createStreamFromString('content');
+
+        // Component with 15 chars should fail with custom limit of 10
+        $key = 'files/'.str_repeat('x', 15).'/file.txt';
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Path component too long (max 10 chars)');
+
+        $customStorage->save($stream, $key, 'text/plain', 7);
+    }
+
+    #[Test]
     public function itThrowsExceptionForEmptyKey(): void
     {
         $stream = $this->createStreamFromString('content');

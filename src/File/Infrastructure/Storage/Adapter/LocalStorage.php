@@ -20,14 +20,29 @@ use RuntimeException;
  */
 final readonly class LocalStorage implements FileStorageInterface
 {
+    private const DEFAULT_MAX_KEY_LENGTH = 1024;
+    private const DEFAULT_MAX_COMPONENT_LENGTH = 255;
+
     /**
-     * @param string $basePath Base directory for file storage (e.g., "/var/storage")
+     * @param string $basePath           Base directory for file storage (e.g., "/var/storage")
+     * @param int    $maxKeyLength       Maximum total key length (default: 1024 chars)
+     * @param int    $maxComponentLength Maximum path component length (default: 255 chars, filesystem limit)
      */
     public function __construct(
         private string $basePath,
+        private int $maxKeyLength = self::DEFAULT_MAX_KEY_LENGTH,
+        private int $maxComponentLength = self::DEFAULT_MAX_COMPONENT_LENGTH,
     ) {
         if (empty($this->basePath)) {
             throw new InvalidArgumentException('Base path cannot be empty');
+        }
+
+        if ($this->maxKeyLength <= 0) {
+            throw new InvalidArgumentException('Max key length must be positive');
+        }
+
+        if ($this->maxComponentLength <= 0) {
+            throw new InvalidArgumentException('Max component length must be positive');
         }
     }
 
@@ -148,16 +163,23 @@ final readonly class LocalStorage implements FileStorageInterface
 
         // Prevent excessively long keys (filesystem limits)
         // Max path length: 4096 chars on Linux, but we reserve space for basePath
-        // Max component length: 255 chars per directory/filename
-        if (strlen($normalizedKey) > 1024) {
-            throw new InvalidArgumentException(sprintf('Storage key too long (max 1024 chars): %d chars', strlen($normalizedKey)));
+        if (strlen($normalizedKey) > $this->maxKeyLength) {
+            throw new InvalidArgumentException(sprintf(
+                'Storage key too long (max %d chars): %d chars',
+                $this->maxKeyLength,
+                strlen($normalizedKey)
+            ));
         }
 
-        // Check each path component doesn't exceed 255 chars (filesystem limit)
+        // Check each path component doesn't exceed max length (filesystem limit: 255 chars)
         $components = explode('/', $normalizedKey);
         foreach ($components as $component) {
-            if (strlen($component) > 255) {
-                throw new InvalidArgumentException(sprintf('Path component too long (max 255 chars): "%s"', $component));
+            if (strlen($component) > $this->maxComponentLength) {
+                throw new InvalidArgumentException(sprintf(
+                    'Path component too long (max %d chars): "%s"',
+                    $this->maxComponentLength,
+                    $component
+                ));
             }
         }
 
