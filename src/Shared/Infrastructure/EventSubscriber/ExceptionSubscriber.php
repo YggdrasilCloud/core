@@ -7,6 +7,7 @@ namespace App\Shared\Infrastructure\EventSubscriber;
 use App\Photo\Domain\Exception\FolderNotFoundException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Throwable;
@@ -33,10 +34,10 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
                 [
                     'type' => 'https://tools.ietf.org/html/rfc7231#section-6.5.4',
                     'title' => 'Not Found',
-                    'status' => 404,
+                    'status' => Response::HTTP_NOT_FOUND,
                     'detail' => $folderNotFoundException->getMessage(),
                 ],
-                404,
+                Response::HTTP_NOT_FOUND,
                 ['Content-Type' => 'application/problem+json']
             );
 
