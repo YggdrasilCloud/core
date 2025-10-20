@@ -6,7 +6,7 @@ namespace App\Photo\UserInterface\Http\Controller;
 
 use App\Photo\Application\Query\GetFolderChildren\GetFolderChildrenQuery;
 use App\Photo\Application\Query\GetFolderChildren\GetFolderChildrenResult;
-use App\Photo\UserInterface\Http\Responder\JsonResponder;
+use App\Shared\UserInterface\Http\Responder\JsonResponder;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;

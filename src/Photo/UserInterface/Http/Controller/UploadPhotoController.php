@@ -8,7 +8,7 @@ use App\Photo\Application\Command\UploadPhotoToFolder\UploadPhotoToFolderCommand
 use App\Photo\Domain\Model\PhotoId;
 use App\Photo\Domain\Service\FileValidator;
 use App\Photo\UserInterface\Http\Request\UploadPhotoRequest;
-use App\Photo\UserInterface\Http\Responder\JsonResponder;
+use App\Shared\UserInterface\Http\Responder\JsonResponder;
 use DomainException;
 use Exception;
 use InvalidArgumentException;

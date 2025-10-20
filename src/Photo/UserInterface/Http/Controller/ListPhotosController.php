@@ -8,7 +8,7 @@ use App\Photo\Application\Query\ListPhotosInFolder\ListPhotosInFolderQuery;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\UserInterface\Http\Request\PaginationParams;
-use App\Photo\UserInterface\Http\Responder\JsonResponder;
+use App\Shared\UserInterface\Http\Responder\JsonResponder;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
