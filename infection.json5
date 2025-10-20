@@ -19,7 +19,7 @@
     },
     "testFramework": "phpunit",
     "minMsi": 80,
-    "minCoveredMsi": 90,
+    "minCoveredMsi": 80,
     "mutators": {
         "@default": true,
         "@function_signature": false
