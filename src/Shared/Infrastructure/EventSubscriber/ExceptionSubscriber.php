@@ -36,7 +36,8 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
                     'status' => 404,
                     'detail' => $folderNotFoundException->getMessage(),
                 ],
-                404
+                404,
+                ['Content-Type' => 'application/problem+json']
             );
 
             $event->setResponse($response);
