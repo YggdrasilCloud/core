@@ -97,6 +97,7 @@ final class GetFolderPathControllerTest extends WebTestCase
         $client->request('GET', '/api/folders/'.$nonExistentId->toString().'/path');
 
         self::assertResponseStatusCodeSame(404);
+        self::assertResponseHeaderSame('Content-Type', 'application/problem+json');
 
         $response = $client->getResponse();
         $data = json_decode($response->getContent(), true);

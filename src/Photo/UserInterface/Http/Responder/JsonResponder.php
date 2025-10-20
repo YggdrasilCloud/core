@@ -42,7 +42,11 @@ final readonly class JsonResponder
             $problem['detail'] = $detail;
         }
 
-        return new JsonResponse(array_merge($problem, $additional), $status);
+        return new JsonResponse(
+            array_merge($problem, $additional),
+            $status,
+            ['Content-Type' => 'application/problem+json']
+        );
     }
 
     /**
