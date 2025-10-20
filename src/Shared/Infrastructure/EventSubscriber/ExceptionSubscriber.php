@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
+use Symfony\Component\Messenger\Exception\HandlerFailedException;
 use Throwable;
 
 final readonly class ExceptionSubscriber implements EventSubscriberInterface
@@ -51,7 +52,17 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
             return $exception;
         }
 
-        // Check previous exception (for wrapped exceptions like HandlerFailedException)
+        // Handle Symfony Messenger's HandlerFailedException which stores wrapped exceptions
+        if ($exception instanceof HandlerFailedException) {
+            foreach ($exception->getWrappedExceptions() as $wrappedException) {
+                $found = $this->findFolderNotFoundException($wrappedException);
+                if ($found !== null) {
+                    return $found;
+                }
+            }
+        }
+
+        // Check previous exception (for other wrapped exceptions)
         if ($exception->getPrevious() !== null) {
             return $this->findFolderNotFoundException($exception->getPrevious());
         }
