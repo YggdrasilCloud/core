@@ -59,3 +59,15 @@ services:
     App\Command\SeedTestDataCommand:
         arguments:
             $projectDir: '%kernel.project_dir%'
+
+    # File Bounded Context - Storage Infrastructure
+    App\File\Infrastructure\Storage\StorageDsnParser: ~
+
+    App\File\Infrastructure\Storage\StorageFactory:
+        arguments:
+            $bridges: !tagged_iterator storage.bridge
+
+    App\File\Domain\Port\FileStorageInterface:
+        factory: ['@App\File\Infrastructure\Storage\StorageFactory', 'create']
+        arguments:
+            $dsn: '%env(STORAGE_DSN)%'
