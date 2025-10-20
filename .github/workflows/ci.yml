@@ -130,8 +130,7 @@ jobs:
             --min-msi=80 \
             --min-covered-msi=90 \
             --logger-github \
-            --only-covered \
-            --only-covering-tests
+            --only-covering-test-cases
         env:
           INFECTION_BADGE_API_KEY: ${{ secrets.INFECTION_BADGE_API_KEY }}
 
