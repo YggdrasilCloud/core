@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Shared\Infrastructure\EventSubscriber;
 
 use App\Photo\Domain\Exception\FolderNotFoundException;
+use App\Shared\UserInterface\Http\Responder\JsonResponder;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
@@ -15,6 +14,10 @@ use Throwable;
 
 final readonly class ExceptionSubscriber implements EventSubscriberInterface
 {
+    public function __construct(
+        private JsonResponder $responder,
+    ) {}
+
     public static function getSubscribedEvents(): array
     {
         return [
@@ -31,17 +34,10 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
         $folderNotFoundException = $this->findFolderNotFoundException($exception);
 
         if ($folderNotFoundException !== null) {
-            $response = new JsonResponse(
-                [
-                    'type' => 'https://tools.ietf.org/html/rfc7231#section-6.5.4',
-                    'title' => 'Not Found',
-                    'status' => Response::HTTP_NOT_FOUND,
-                    'detail' => $folderNotFoundException->getMessage(),
-                ],
-                Response::HTTP_NOT_FOUND
+            $response = $this->responder->notFound(
+                'Not Found',
+                $folderNotFoundException->getMessage()
             );
-
-            $response->headers->set('Content-Type', 'application/problem+json');
 
             $event->setResponse($response);
         }
