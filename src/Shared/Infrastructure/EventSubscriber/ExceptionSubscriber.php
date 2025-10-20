@@ -38,9 +38,10 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
                     'status' => Response::HTTP_NOT_FOUND,
                     'detail' => $folderNotFoundException->getMessage(),
                 ],
-                Response::HTTP_NOT_FOUND,
-                ['Content-Type' => 'application/problem+json']
+                Response::HTTP_NOT_FOUND
             );
+
+            $response->headers->set('Content-Type', 'application/problem+json');
 
             $event->setResponse($response);
         }
