@@ -11,7 +11,7 @@ final readonly class PhotoUploaded
         public string $folderId,
         public string $ownerId,
         public string $fileName,
-        public string $storagePath,
+        public string $storageKey,
         public string $mimeType,
         public int $sizeInBytes,
     ) {}

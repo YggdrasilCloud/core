@@ -17,7 +17,11 @@ final class Photo
         private FolderId $folderId,
         private UserId $ownerId,
         private FileName $fileName,
-        private StoredFile $storedFile,
+        private string $storageKey,
+        private string $storageAdapter,
+        private string $mimeType,
+        private int $sizeInBytes,
+        private ?string $thumbnailKey,
         private DateTimeImmutable $uploadedAt,
     ) {}
 
@@ -26,14 +30,22 @@ final class Photo
         FolderId $folderId,
         UserId $ownerId,
         FileName $fileName,
-        StoredFile $storedFile,
+        string $storageKey,
+        string $storageAdapter,
+        string $mimeType,
+        int $sizeInBytes,
+        ?string $thumbnailKey = null,
     ): self {
         $photo = new self(
             $id,
             $folderId,
             $ownerId,
             $fileName,
-            $storedFile,
+            $storageKey,
+            $storageAdapter,
+            $mimeType,
+            $sizeInBytes,
+            $thumbnailKey,
             new DateTimeImmutable(),
         );
 
@@ -42,9 +54,9 @@ final class Photo
             $folderId->toString(),
             $ownerId->toString(),
             $fileName->toString(),
-            $storedFile->storagePath(),
-            $storedFile->mimeType(),
-            $storedFile->sizeInBytes(),
+            $storageKey,
+            $mimeType,
+            $sizeInBytes,
         ));
 
         return $photo;
@@ -70,9 +82,29 @@ final class Photo
         return $this->fileName;
     }
 
-    public function storedFile(): StoredFile
+    public function storageKey(): string
     {
-        return $this->storedFile;
+        return $this->storageKey;
+    }
+
+    public function storageAdapter(): string
+    {
+        return $this->storageAdapter;
+    }
+
+    public function mimeType(): string
+    {
+        return $this->mimeType;
+    }
+
+    public function sizeInBytes(): int
+    {
+        return $this->sizeInBytes;
+    }
+
+    public function thumbnailKey(): ?string
+    {
+        return $this->thumbnailKey;
     }
 
     public function uploadedAt(): DateTimeImmutable
