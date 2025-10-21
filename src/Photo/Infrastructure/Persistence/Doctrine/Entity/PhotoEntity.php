@@ -25,8 +25,11 @@ class PhotoEntity
     #[ORM\Column(type: 'string', length: 255)]
     private string $fileName;
 
-    #[ORM\Column(type: 'string', length: 500)]
-    private string $storagePath;
+    #[ORM\Column(type: 'string', length: 1024)]
+    private string $storageKey;
+
+    #[ORM\Column(type: 'string', length: 50)]
+    private string $storageAdapter;
 
     #[ORM\Column(type: 'string', length: 100)]
     private string $mimeType;
@@ -34,8 +37,8 @@ class PhotoEntity
     #[ORM\Column(type: 'integer')]
     private int $sizeInBytes;
 
-    #[ORM\Column(type: 'string', length: 500, nullable: true)]
-    private ?string $thumbnailPath = null;
+    #[ORM\Column(type: 'string', length: 1024, nullable: true)]
+    private ?string $thumbnailKey = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
     private DateTimeImmutable $uploadedAt;
@@ -45,20 +48,22 @@ class PhotoEntity
         string $folderId,
         string $ownerId,
         string $fileName,
-        string $storagePath,
+        string $storageKey,
+        string $storageAdapter,
         string $mimeType,
         int $sizeInBytes,
         DateTimeImmutable $uploadedAt,
-        ?string $thumbnailPath = null,
+        ?string $thumbnailKey = null,
     ) {
         $this->id = $id;
         $this->folderId = $folderId;
         $this->ownerId = $ownerId;
         $this->fileName = $fileName;
-        $this->storagePath = $storagePath;
+        $this->storageKey = $storageKey;
+        $this->storageAdapter = $storageAdapter;
         $this->mimeType = $mimeType;
         $this->sizeInBytes = $sizeInBytes;
-        $this->thumbnailPath = $thumbnailPath;
+        $this->thumbnailKey = $thumbnailKey;
         $this->uploadedAt = $uploadedAt;
     }
 
@@ -82,9 +87,14 @@ class PhotoEntity
         return $this->fileName;
     }
 
-    public function getStoragePath(): string
+    public function getStorageKey(): string
     {
-        return $this->storagePath;
+        return $this->storageKey;
+    }
+
+    public function getStorageAdapter(): string
+    {
+        return $this->storageAdapter;
     }
 
     public function getMimeType(): string
@@ -102,13 +112,13 @@ class PhotoEntity
         return $this->uploadedAt;
     }
 
-    public function getThumbnailPath(): ?string
+    public function getThumbnailKey(): ?string
     {
-        return $this->thumbnailPath;
+        return $this->thumbnailKey;
     }
 
-    public function setThumbnailPath(?string $thumbnailPath): void
+    public function setThumbnailKey(?string $thumbnailKey): void
     {
-        $this->thumbnailPath = $thumbnailPath;
+        $this->thumbnailKey = $thumbnailKey;
     }
 }
