@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Photo\Application\Command\UploadPhotoToFolder;
 
+use App\File\Domain\Port\FileStorageInterface;
 use App\Photo\Domain\Model\FileName;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\Photo;
 use App\Photo\Domain\Model\PhotoId;
-use App\Photo\Domain\Model\StoredFile;
 use App\Photo\Domain\Model\UserId;
-use App\Photo\Domain\Port\FileStorageInterface;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
 use App\Photo\Domain\Service\ThumbnailGenerator;
@@ -42,14 +41,24 @@ final readonly class UploadPhotoToFolderHandler
             throw new DomainException(sprintf('Folder not found: %s', $command->folderId));
         }
 
-        // Stocker le fichier
-        $storagePath = $this->fileStorage->store($command->fileStream, $command->fileName);
+        // Stocker le fichier avec le nouveau FileStorageInterface
+        $photoId = PhotoId::fromString($command->photoId);
+        $storageKey = sprintf('photos/%s/%s', $folderId->toString(), $photoId->toString());
+
+        $storedObject = $this->fileStorage->save(
+            $command->fileStream,
+            $storageKey,
+            $command->mimeType,
+            $command->sizeInBytes
+        );
 
         // Générer la vignette
-        $thumbnailPath = null;
+        $thumbnailKey = null;
 
         try {
-            $thumbnailPath = $this->thumbnailGenerator->generateThumbnail($storagePath);
+            $thumbnailPath = $this->thumbnailGenerator->generateThumbnail($storedObject->key);
+            // Convert thumbnail path to storage key
+            $thumbnailKey = sprintf('thumbnails/%s/%s', $folderId->toString(), $photoId->toString());
         } catch (Exception) {
             // Si la génération échoue, on continue sans vignette
             // Amélioration future : logger l'erreur
@@ -57,11 +66,15 @@ final readonly class UploadPhotoToFolderHandler
 
         // Créer l'entité Photo
         $photo = Photo::upload(
-            PhotoId::fromString($command->photoId),
+            $photoId,
             $folderId,
             UserId::fromString($command->ownerId),
             FileName::fromString($command->fileName),
-            StoredFile::create($storagePath, $command->mimeType, $command->sizeInBytes, $thumbnailPath),
+            $storedObject->key,
+            $storedObject->adapter,
+            $command->mimeType,
+            $command->sizeInBytes,
+            $thumbnailKey,
         );
 
         $this->photoRepository->save($photo);
