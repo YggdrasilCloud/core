@@ -7,7 +7,7 @@ namespace App\Photo\Application\Query\GetPhotoFile;
 final readonly class FileResponseModel
 {
     public function __construct(
-        public string $filePath,
+        public string $storageKey,
         public string $mimeType,
         public int $cacheMaxAge,
     ) {}
