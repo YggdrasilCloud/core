@@ -4,26 +4,35 @@ declare(strict_types=1);
 
 namespace App\Photo\UserInterface\Http\Responder;
 
+use App\File\Domain\Port\FileStorageInterface;
 use App\Photo\Application\Query\GetPhotoFile\FileResponseModel;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final readonly class FileResponder
 {
-    public function respond(FileResponseModel $model, Request $request): BinaryFileResponse
+    public function __construct(
+        private FileStorageInterface $fileStorage,
+    ) {}
+
+    public function respond(FileResponseModel $model, Request $request): StreamedResponse
     {
-        $response = new BinaryFileResponse($model->filePath);
+        $response = new StreamedResponse();
         $response->headers->set('Content-Type', $model->mimeType);
 
-        // Enable conditional cache with ETag and Last-Modified
-        $response->setAutoEtag();
-        $response->setAutoLastModified();
+        // Set callback to stream file content
+        $response->setCallback(function () use ($model): void {
+            $stream = $this->fileStorage->readStream($model->storageKey);
+            fpassthru($stream);
+            fclose($stream);
+        });
+
         $response->setPublic();
         $response->setMaxAge($model->cacheMaxAge);
         $response->setSharedMaxAge($model->cacheMaxAge);
 
-        // Check if response is not modified (sends 304 if client has fresh cache)
-        $response->isNotModified($request);
+        // For conditional cache, we'd need to compute ETag from storage metadata
+        // This is a future enhancement when storage supports metadata queries
 
         return $response;
     }
