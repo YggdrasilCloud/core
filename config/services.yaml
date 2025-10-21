@@ -42,13 +42,8 @@ services:
             $allowedMimeTypes: '%photo.allowed_mime_types%'
 
     # Photo Bounded Context - Query handlers
-    App\Photo\Application\Query\GetPhotoFile\GetPhotoFileHandler:
-        arguments:
-            $storageBasePath: '%photo.storage_path%'
-
-    App\Photo\Application\Query\GetPhotoThumbnail\GetPhotoThumbnailHandler:
-        arguments:
-            $storageBasePath: '%photo.storage_path%'
+    # GetPhotoFileHandler and GetPhotoThumbnailHandler now use FileStorageInterface
+    # which is automatically injected by Symfony's autowiring
 
     # Photo Bounded Context - Thumbnail generator
     App\Photo\Domain\Service\ThumbnailGenerator:
