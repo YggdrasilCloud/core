@@ -8,7 +8,6 @@ use App\Photo\Domain\Model\FileName;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\Photo;
 use App\Photo\Domain\Model\PhotoId;
-use App\Photo\Domain\Model\StoredFile;
 use App\Photo\Domain\Model\UserId;
 use App\Photo\Infrastructure\Persistence\Doctrine\Entity\PhotoEntity;
 use ReflectionClass;
@@ -22,11 +21,12 @@ final class PhotoMapper
             $photo->folderId()->toString(),
             $photo->ownerId()->toString(),
             $photo->fileName()->toString(),
-            $photo->storedFile()->storagePath(),
-            $photo->storedFile()->mimeType(),
-            $photo->storedFile()->sizeInBytes(),
+            $photo->storageKey(),
+            $photo->storageAdapter(),
+            $photo->mimeType(),
+            $photo->sizeInBytes(),
             $photo->uploadedAt(),
-            $photo->storedFile()->thumbnailPath(),
+            $photo->thumbnailKey(),
         );
     }
 
@@ -47,13 +47,20 @@ final class PhotoMapper
         $fileNameProperty = $reflection->getProperty('fileName');
         $fileNameProperty->setValue($photo, FileName::fromString($entity->getFileName()));
 
-        $storedFileProperty = $reflection->getProperty('storedFile');
-        $storedFileProperty->setValue($photo, StoredFile::create(
-            $entity->getStoragePath(),
-            $entity->getMimeType(),
-            $entity->getSizeInBytes(),
-            $entity->getThumbnailPath(),
-        ));
+        $storageKeyProperty = $reflection->getProperty('storageKey');
+        $storageKeyProperty->setValue($photo, $entity->getStorageKey());
+
+        $storageAdapterProperty = $reflection->getProperty('storageAdapter');
+        $storageAdapterProperty->setValue($photo, $entity->getStorageAdapter());
+
+        $mimeTypeProperty = $reflection->getProperty('mimeType');
+        $mimeTypeProperty->setValue($photo, $entity->getMimeType());
+
+        $sizeInBytesProperty = $reflection->getProperty('sizeInBytes');
+        $sizeInBytesProperty->setValue($photo, $entity->getSizeInBytes());
+
+        $thumbnailKeyProperty = $reflection->getProperty('thumbnailKey');
+        $thumbnailKeyProperty->setValue($photo, $entity->getThumbnailKey());
 
         $uploadedAtProperty = $reflection->getProperty('uploadedAt');
         $uploadedAtProperty->setValue($photo, $entity->getUploadedAt());
