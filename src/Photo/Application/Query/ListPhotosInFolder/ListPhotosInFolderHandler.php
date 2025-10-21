@@ -36,12 +36,12 @@ final readonly class ListPhotosInFolderHandler
             static fn ($photo) => new PhotoDto(
                 $photo->id()->toString(),
                 $photo->fileName()->toString(),
-                $photo->storedFile()->storagePath(),
-                $photo->storedFile()->mimeType(),
-                $photo->storedFile()->sizeInBytes(),
+                $photo->storageKey(),
+                $photo->mimeType(),
+                $photo->sizeInBytes(),
                 $photo->uploadedAt()->format(DateTimeInterface::ATOM),
                 '/api/photos/'.$photo->id()->toString().'/file',
-                $photo->storedFile()->thumbnailPath() !== null
+                $photo->thumbnailKey() !== null
                     ? '/api/photos/'.$photo->id()->toString().'/thumbnail'
                     : null,
             ),

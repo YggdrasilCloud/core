@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\Application\Query\GetPhotoThumbnail;
 
+use App\File\Domain\Port\FileStorageInterface;
 use App\Photo\Application\Query\GetPhotoFile\FileResponseModel;
 use App\Photo\Domain\Model\PhotoId;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
@@ -14,7 +15,7 @@ final readonly class GetPhotoThumbnailHandler
 {
     public function __construct(
         private PhotoRepositoryInterface $photoRepository,
-        private string $storageBasePath,
+        private FileStorageInterface $fileStorage,
     ) {}
 
     /**
@@ -30,20 +31,18 @@ final readonly class GetPhotoThumbnailHandler
             throw new PhotoNotFoundException($query->photoId);
         }
 
-        $thumbnailPath = $photo->storedFile()->thumbnailPath();
+        $thumbnailKey = $photo->thumbnailKey();
 
-        if ($thumbnailPath === null) {
+        if ($thumbnailKey === null) {
             throw new ThumbnailNotFoundException($query->photoId);
         }
 
-        $fullPath = $this->storageBasePath.'/'.$thumbnailPath;
-
-        if (!file_exists($fullPath)) {
-            throw new ThumbnailFileNotFoundException($fullPath);
+        if (!$this->fileStorage->exists($thumbnailKey)) {
+            throw new ThumbnailFileNotFoundException($thumbnailKey);
         }
 
         return new FileResponseModel(
-            filePath: $fullPath,
+            storageKey: $thumbnailKey,
             mimeType: 'image/jpeg', // Thumbnails are always JPEG
             cacheMaxAge: 31536000, // 1 year (thumbnails never change)
         );
