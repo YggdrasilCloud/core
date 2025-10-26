@@ -388,6 +388,21 @@ final class LocalStorageTest extends TestCase
     }
 
     #[Test]
+    public function itAcceptsPathComponentWithExactlyMaxLength(): void
+    {
+        $stream = $this->createStreamFromString('content');
+
+        // Create a path with a component of exactly 255 chars (should be accepted)
+        $exactComponent = str_repeat('y', 255);
+        $key = 'files/'.$exactComponent.'/file.txt';
+
+        $result = $this->storage->save($stream, $key, 'text/plain', 7);
+
+        self::assertSame($key, $result->key);
+        self::assertFileExists($this->tempDir.'/'.$key);
+    }
+
+    #[Test]
     public function itThrowsExceptionForTooLongPathComponent(): void
     {
         $stream = $this->createStreamFromString('content');

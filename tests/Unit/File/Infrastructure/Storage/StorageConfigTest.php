@@ -68,6 +68,15 @@ final class StorageConfigTest extends TestCase
     }
 
     #[Test]
+    public function itReturnsOptionValueOverDefaultWhenBothExist(): void
+    {
+        $config = new StorageConfig('local', ['root' => '/var/storage']);
+
+        // Should return the option value, not the default
+        self::assertSame('/var/storage', $config->get('root', '/default/path'));
+    }
+
+    #[Test]
     public function itChecksIfOptionExists(): void
     {
         $config = new StorageConfig('local', ['root' => '/var/storage']);
