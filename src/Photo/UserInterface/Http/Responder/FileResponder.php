@@ -23,8 +23,12 @@ final readonly class FileResponder
         // Set callback to stream file content
         $response->setCallback(function () use ($model): void {
             $stream = $this->fileStorage->readStream($model->storageKey);
-            fpassthru($stream);
-            fclose($stream);
+
+            try {
+                fpassthru($stream);
+            } finally {
+                fclose($stream);
+            }
         });
 
         $response->setPublic();
