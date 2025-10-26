@@ -7,6 +7,11 @@
          resolveDependencies="true"
          failOnRisky="true"
          failOnWarning="false">
+    <!--
+        failOnWarning is set to "false" to allow tests to pass while deprecation warnings
+        from Symfony/Doctrine are being addressed in future updates.
+        TODO: Re-enable (set to "true") once all warnings are resolved.
+    -->
     <php>
         <ini name="display_errors" value="1"/>
         <ini name="error_reporting" value="-1"/>

@@ -30,7 +30,7 @@ final class Version20251020214418 extends AbstractMigration
     public function down(Schema $schema): void
     {
         // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('CREATE SCHEMA public');
+        // Note: CREATE SCHEMA removed for SQLite compatibility
         $this->addSql('ALTER TABLE photos ADD storage_path VARCHAR(500) NOT NULL');
         $this->addSql('ALTER TABLE photos ADD thumbnail_path VARCHAR(500) DEFAULT NULL');
         $this->addSql('ALTER TABLE photos DROP storage_key');
