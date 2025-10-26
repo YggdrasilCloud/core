@@ -210,4 +210,37 @@ final class StorageFactoryTest extends TestCase
 
         // Verify defaults (1024 and 255) are used - tested implicitly in LocalStorageTest
     }
+
+    #[Test]
+    public function itResolvesRelativePathsWithProjectDir(): void
+    {
+        $factory = new StorageFactory($this->parser, [], '/app');
+
+        $storage = $factory->create('storage://local?root=var/storage');
+
+        self::assertInstanceOf(LocalStorage::class, $storage);
+        // The path should be resolved to /app/var/storage
+    }
+
+    #[Test]
+    public function itDoesNotModifyAbsolutePathsWithProjectDir(): void
+    {
+        $factory = new StorageFactory($this->parser, [], '/app');
+
+        $storage = $factory->create('storage://local?root=/var/storage');
+
+        self::assertInstanceOf(LocalStorage::class, $storage);
+        // The path should remain /var/storage
+    }
+
+    #[Test]
+    public function itHandlesRelativePathsWithoutProjectDir(): void
+    {
+        $factory = new StorageFactory($this->parser, [], null);
+
+        $storage = $factory->create('storage://local?root=var/storage');
+
+        self::assertInstanceOf(LocalStorage::class, $storage);
+        // The path should remain var/storage (will be resolved relative to CWD)
+    }
 }

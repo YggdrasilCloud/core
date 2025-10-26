@@ -33,6 +33,7 @@ final readonly class StorageFactory
     public function __construct(
         private StorageDsnParser $parser,
         private iterable $bridges = [],
+        private ?string $projectDir = null,
     ) {}
 
     /**
@@ -53,6 +54,11 @@ final readonly class StorageFactory
         if ($config->driver === 'local') {
             /** @var string $basePath */
             $basePath = $config->get('root') ?? '/var/storage';
+
+            // Resolve relative paths relative to project directory
+            if ($this->projectDir !== null && !str_starts_with($basePath, '/')) {
+                $basePath = $this->projectDir.'/'.$basePath;
+            }
 
             /** @var int $maxKeyLength */
             $maxKeyLength = $config->getInt('max_key_length') ?? 1024;

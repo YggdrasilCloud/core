@@ -61,6 +61,7 @@ services:
     App\File\Infrastructure\Storage\StorageFactory:
         arguments:
             $bridges: !tagged_iterator storage.bridge
+            $projectDir: '%kernel.project_dir%'
 
     App\File\Domain\Port\FileStorageInterface:
         factory: ['@App\File\Infrastructure\Storage\StorageFactory', 'create']
