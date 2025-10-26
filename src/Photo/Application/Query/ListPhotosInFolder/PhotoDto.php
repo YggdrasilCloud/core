@@ -9,7 +9,7 @@ final readonly class PhotoDto
     public function __construct(
         public string $id,
         public string $fileName,
-        public string $storagePath,
+        public string $storageKey,
         public string $mimeType,
         public int $sizeInBytes,
         public string $uploadedAt,
