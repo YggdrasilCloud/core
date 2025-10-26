@@ -52,23 +52,35 @@ final class SeedTestDataCommand extends Command
         $this->purgeDatabase();
         $io->success('Database purged');
 
-        // Step 2: Create test folders
-        $io->section('Creating test folders...');
-        $folder1Id = $this->createFolder('Vacation Photos 2024');
-        $folder2Id = $this->createFolder('Family Memories');
-        $folder3Id = $this->createFolder('Empty Folder');
-        $io->success('Created 3 test folders');
+        // Step 2: Create test folder hierarchy
+        $io->section('Creating test folder hierarchy...');
+        $foldersCreated = $this->createFolderHierarchy();
+        $io->success(sprintf('Created %d test folders (including nested)', $foldersCreated['total']));
 
         // Step 3: Upload test photos
         $io->section('Uploading test photos...');
-        $photosUploaded = $this->uploadTestPhotos($folder1Id);
-        $io->success(sprintf('Uploaded %d test photos to "%s"', $photosUploaded, 'Vacation Photos 2024'));
+        $photosUploaded = $this->uploadTestPhotosToFolders($foldersCreated['folders']);
+        $io->success(sprintf('Uploaded %d test photos to multiple folders', $photosUploaded));
 
         $io->success('Test data seeded successfully!');
         $io->info([
             'Database: Purged',
-            'Folders: 3 created',
+            'Folders: '.$foldersCreated['total'].' created ('
+            .$foldersCreated['root'].' root, '
+            .$foldersCreated['nested'].' nested)',
             "Photos: {$photosUploaded} uploaded",
+            '',
+            'Folder structure:',
+            '  - Vacation Photos 2024',
+            '    └─ Summer',
+            '       ├─ Beach',
+            '       └─ Mountains',
+            '    └─ Winter',
+            '  - Family Memories',
+            '    ├─ Birthdays',
+            '    └─ Holidays',
+            '  - Work Projects',
+            '  - Empty Folder',
             '',
             'You can now run E2E tests.',
         ]);
@@ -79,11 +91,12 @@ final class SeedTestDataCommand extends Command
     private function purgeDatabase(): void
     {
         // Delete in correct order (foreign keys)
-        $this->connection->executeStatement('TRUNCATE TABLE photos CASCADE');
-        $this->connection->executeStatement('TRUNCATE TABLE folders CASCADE');
+        // Use DELETE FROM instead of TRUNCATE for SQLite compatibility
+        $this->connection->executeStatement('DELETE FROM photos');
+        $this->connection->executeStatement('DELETE FROM folders');
     }
 
-    private function createFolder(string $name): string
+    private function createFolder(string $name, ?string $parentId = null): string
     {
         $folderId = Uuid::v7()->toString();
 
@@ -91,11 +104,97 @@ final class SeedTestDataCommand extends Command
             folderId: $folderId,
             folderName: $name,
             ownerId: self::DEFAULT_OWNER_ID,
+            parentId: $parentId,
         );
 
         $this->messageBus->dispatch($command);
 
         return $folderId;
+    }
+
+    /**
+     * @return array{folders: array<string, string>, root: int, nested: int, total: int}
+     */
+    private function createFolderHierarchy(): array
+    {
+        $folders = [];
+        $rootCount = 0;
+        $nestedCount = 0;
+
+        // Vacation Photos 2024 (with nested structure)
+        $vacation = $this->createFolder('Vacation Photos 2024');
+        $folders['vacation'] = $vacation;
+        ++$rootCount;
+
+        $summer = $this->createFolder('Summer', $vacation);
+        $folders['summer'] = $summer;
+        ++$nestedCount;
+
+        $beach = $this->createFolder('Beach', $summer);
+        $folders['beach'] = $beach;
+        ++$nestedCount;
+
+        $mountains = $this->createFolder('Mountains', $summer);
+        $folders['mountains'] = $mountains;
+        ++$nestedCount;
+
+        $winter = $this->createFolder('Winter', $vacation);
+        $folders['winter'] = $winter;
+        ++$nestedCount;
+
+        // Family Memories (with subfolders)
+        $family = $this->createFolder('Family Memories');
+        $folders['family'] = $family;
+        ++$rootCount;
+
+        $birthdays = $this->createFolder('Birthdays', $family);
+        $folders['birthdays'] = $birthdays;
+        ++$nestedCount;
+
+        $holidays = $this->createFolder('Holidays', $family);
+        $folders['holidays'] = $holidays;
+        ++$nestedCount;
+
+        // Work Projects (root only, no children)
+        $work = $this->createFolder('Work Projects');
+        $folders['work'] = $work;
+        ++$rootCount;
+
+        // Empty Folder (root only, no children, no photos)
+        $empty = $this->createFolder('Empty Folder');
+        $folders['empty'] = $empty;
+        ++$rootCount;
+
+        return [
+            'folders' => $folders,
+            'root' => $rootCount,
+            'nested' => $nestedCount,
+            'total' => $rootCount + $nestedCount,
+        ];
+    }
+
+    /**
+     * @param array<string, string> $folders
+     */
+    private function uploadTestPhotosToFolders(array $folders): int
+    {
+        $totalPhotosUploaded = 0;
+
+        // Upload photos to multiple folders (not the empty one)
+        $foldersToPopulate = [
+            $folders['vacation'],  // Vacation Photos 2024
+            $folders['beach'],     // Beach (nested)
+            $folders['family'],    // Family Memories
+            $folders['birthdays'], // Birthdays (nested)
+            $folders['work'],      // Work Projects
+        ];
+
+        foreach ($foldersToPopulate as $folderId) {
+            $count = $this->uploadTestPhotos($folderId);
+            $totalPhotosUploaded += $count;
+        }
+
+        return $totalPhotosUploaded;
     }
 
     private function uploadTestPhotos(string $folderId): int
