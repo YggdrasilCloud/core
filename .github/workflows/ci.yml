@@ -50,6 +50,8 @@ jobs:
 
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse --memory-limit=1G
+        env:
+          APP_ENV: test
 
   architecture:
     name: Architecture Validation
@@ -121,6 +123,8 @@ jobs:
 
       - name: Run PHPUnit tests
         run: vendor/bin/phpunit --coverage-text --coverage-clover=coverage.xml
+        env:
+          APP_ENV: test
 
       - name: Run Infection mutation testing
         run: |
@@ -132,6 +136,7 @@ jobs:
             --logger-github \
             --only-covering-test-cases
         env:
+          APP_ENV: test
           INFECTION_BADGE_API_KEY: ${{ secrets.INFECTION_BADGE_API_KEY }}
 
       - name: Upload coverage to Codecov
