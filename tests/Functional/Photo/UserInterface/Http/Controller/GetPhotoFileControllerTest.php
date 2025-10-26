@@ -10,7 +10,6 @@ use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\FolderName;
 use App\Photo\Domain\Model\Photo;
 use App\Photo\Domain\Model\PhotoId;
-use App\Photo\Domain\Model\StoredFile;
 use App\Photo\Domain\Model\UserId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
@@ -32,7 +31,7 @@ final class GetPhotoFileControllerTest extends WebTestCase
         self::ensureKernelShutdown();
         parent::setUp();
         // Use the actual storage path that the application expects
-        $this->testStoragePath = __DIR__.'/../../../../../../var/storage/photos';
+        $this->testStoragePath = __DIR__.'/../../../../../../var/storage';
         if (!is_dir($this->testStoragePath)) {
             mkdir($this->testStoragePath, 0755, true);
         }
@@ -61,22 +60,24 @@ final class GetPhotoFileControllerTest extends WebTestCase
 
         // Create test photo in database
         $photoId = PhotoId::generate();
-        $relativePath = '2025/10/11/test.jpg';
-        $storedFile = StoredFile::create($relativePath, 'image/jpeg', 1024);
+        $storageKey = 'photos/2025/10/11/test.jpg';
 
         $photo = Photo::upload(
             $photoId,
             $folderId,
             UserId::fromString('550e8400-e29b-41d4-a716-446655440000'),
             FileName::fromString('test.jpg'),
-            $storedFile
+            $storageKey,
+            'local',
+            'image/jpeg',
+            1024
         );
 
         $photoRepo = $container->get(PhotoRepositoryInterface::class);
         $photoRepo->save($photo);
 
         // Create actual test file on disk
-        $testFilePath = $this->testStoragePath.'/'.$relativePath;
+        $testFilePath = $this->testStoragePath.'/'.$storageKey;
         $dir = dirname($testFilePath);
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
@@ -122,14 +123,16 @@ final class GetPhotoFileControllerTest extends WebTestCase
 
         // Create photo in DB but DON'T create file on disk
         $photoId = PhotoId::generate();
-        $storedFile = StoredFile::create('2025/10/11/missing.jpg', 'image/jpeg', 1024);
 
         $photo = Photo::upload(
             $photoId,
             $folderId,
             UserId::fromString('550e8400-e29b-41d4-a716-446655440000'),
             FileName::fromString('missing.jpg'),
-            $storedFile
+            'photos/2025/10/11/missing.jpg',
+            'local',
+            'image/jpeg',
+            1024
         );
 
         $photoRepo = $container->get(PhotoRepositoryInterface::class);
@@ -169,22 +172,24 @@ final class GetPhotoFileControllerTest extends WebTestCase
 
         // Create test photo
         $photoId = PhotoId::generate();
-        $relativePath = '2025/10/11/test.jpg';
-        $storedFile = StoredFile::create($relativePath, 'image/jpeg', 1024);
+        $storageKey = 'photos/2025/10/11/test.jpg';
 
         $photo = Photo::upload(
             $photoId,
             $folderId,
             UserId::fromString('550e8400-e29b-41d4-a716-446655440000'),
             FileName::fromString('test.jpg'),
-            $storedFile
+            $storageKey,
+            'local',
+            'image/jpeg',
+            1024
         );
 
         $photoRepo = $container->get(PhotoRepositoryInterface::class);
         $photoRepo->save($photo);
 
         // Create test file
-        $testFilePath = $this->testStoragePath.'/'.$relativePath;
+        $testFilePath = $this->testStoragePath.'/'.$storageKey;
         $dir = dirname($testFilePath);
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
