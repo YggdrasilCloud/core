@@ -38,11 +38,19 @@ final class SeedTestDataCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        // Only allow in test environment
-        if ($_ENV['APP_ENV'] !== 'test') {
-            $io->error('This command can only run in test environment (APP_ENV=test)');
+        // Only allow in test or dev environment
+        $allowedEnvs = ['test', 'dev'];
+        if (!in_array($_ENV['APP_ENV'], $allowedEnvs, true)) {
+            $io->error('This command can only run in test or dev environment (APP_ENV=test or APP_ENV=dev)');
 
             return Command::FAILURE;
+        }
+
+        if ($_ENV['APP_ENV'] === 'dev') {
+            $io->warning('You are seeding in DEV environment! This will purge the development database.');
+            if (!$io->confirm('Do you want to continue?', false)) {
+                return Command::FAILURE;
+            }
         }
 
         $io->title('Seeding E2E Test Data');
