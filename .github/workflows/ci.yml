@@ -121,6 +121,11 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
+      - name: Create database schema
+        run: php bin/console doctrine:schema:create --env=test
+        env:
+          APP_ENV: test
+
       - name: Run PHPUnit tests
         run: vendor/bin/phpunit --coverage-text --coverage-clover=coverage.xml
         env:
