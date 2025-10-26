@@ -41,7 +41,7 @@ final readonly class UploadPhotoToFolderHandler
             throw new DomainException(sprintf('Folder not found: %s', $command->folderId));
         }
 
-        // Stocker le fichier avec le nouveau FileStorageInterface
+        // Store the file with the new FileStorageInterface
         $photoId = PhotoId::fromString($command->photoId);
         $storageKey = sprintf('photos/%s/%s', $folderId->toString(), $photoId->toString());
 
@@ -52,19 +52,19 @@ final readonly class UploadPhotoToFolderHandler
             $command->sizeInBytes
         );
 
-        // Générer la vignette
+        // Generate the thumbnail
         $thumbnailKey = null;
 
         try {
             $thumbnailPath = $this->thumbnailGenerator->generateThumbnail($storedObject->key);
-            // Convert thumbnail path to storage key
-            $thumbnailKey = sprintf('thumbnails/%s/%s', $folderId->toString(), $photoId->toString());
+            // Use the actual generated thumbnail path as the key
+            $thumbnailKey = $thumbnailPath;
         } catch (Exception) {
-            // Si la génération échoue, on continue sans vignette
-            // Amélioration future : logger l'erreur
+            // If generation fails, continue without thumbnail
+            // Future improvement: log the error
         }
 
-        // Créer l'entité Photo
+        // Create the Photo entity
         $photo = Photo::upload(
             $photoId,
             $folderId,
