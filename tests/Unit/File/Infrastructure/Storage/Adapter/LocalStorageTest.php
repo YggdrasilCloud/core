@@ -10,6 +10,7 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -399,6 +400,113 @@ final class LocalStorageTest extends TestCase
         $this->expectExceptionMessage('Path component too long (max 255 chars)');
 
         $this->storage->save($stream, $key, 'text/plain', 7);
+    }
+
+    #[Test]
+    public function itAcceptsCustomLogger(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $storage = new LocalStorage($this->tempDir, 1024, 255, $logger);
+
+        $stream = $this->createStreamFromString('content');
+        $key = 'files/test/with-logger.txt';
+
+        // Logger should be used internally (even if no error occurs, constructor accepts it)
+        $result = $storage->save($stream, $key, 'text/plain', 7);
+
+        self::assertInstanceOf(StoredObject::class, $result);
+    }
+
+    #[Test]
+    public function itCallsLoggerOnDeleteSuccess(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $storage = new LocalStorage($this->tempDir, 1024, 255, $logger);
+
+        // Save file first
+        $stream = $this->createStreamFromString('content');
+        $key = 'files/test/delete-with-log.txt';
+        $storage->save($stream, $key, 'text/plain', 7);
+
+        // Logger should be called with info when delete succeeds
+        $logger->expects(self::once())
+            ->method('info')
+            ->with(
+                self::equalTo('File deleted successfully'),
+                self::equalTo(['key' => $key])
+            )
+        ;
+
+        $storage->delete($key);
+    }
+
+    #[Test]
+    public function itCallsLoggerOnReadFileNotFound(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $storage = new LocalStorage($this->tempDir, 1024, 255, $logger);
+
+        $key = 'files/nonexistent/file.txt';
+
+        // Logger should be called with warning when file not found
+        $logger->expects(self::once())
+            ->method('warning')
+            ->with(
+                self::stringContains('File not found'),
+                self::arrayHasKey('key')
+            )
+        ;
+
+        $this->expectException(RuntimeException::class);
+        $storage->readStream($key);
+    }
+
+    #[Test]
+    public function itCallsLoggerOnSizeMismatch(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $storage = new LocalStorage($this->tempDir, 1024, 255, $logger);
+
+        $content = 'test content';
+        $stream = $this->createStreamFromString($content);
+        $wrongSize = 999;
+
+        // Logger should be called with warning on size mismatch
+        $logger->expects(self::once())
+            ->method('warning')
+            ->with(
+                self::stringContains('File size mismatch'),
+                self::callback(static function ($context) {
+                    return isset($context['key'])
+                        && isset($context['expected'], $context['actual']);
+                })
+            )
+        ;
+
+        $this->expectException(RuntimeException::class);
+        $storage->save($stream, 'files/test/file.txt', 'text/plain', $wrongSize);
+    }
+
+    #[Test]
+    public function itClosesDestinationFileOnSizeMismatchError(): void
+    {
+        $content = 'test content';
+        $stream = $this->createStreamFromString($content);
+        $wrongSize = 999;
+        $key = 'files/test/mismatch.txt';
+
+        try {
+            $this->storage->save($stream, $key, 'text/plain', $wrongSize);
+        } catch (RuntimeException) {
+            // Expected exception
+        }
+
+        // File should still exist on disk despite error (because fclose was called in finally)
+        $fullPath = $this->tempDir.'/'.$key;
+        self::assertFileExists($fullPath);
+
+        // File should contain the actual written content (not corrupted)
+        self::assertSame($content, file_get_contents($fullPath));
     }
 
     /**
