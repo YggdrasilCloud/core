@@ -229,4 +229,50 @@ final class StorageConfigTest extends TestCase
         self::assertTrue($config->getBool('debug'));
         self::assertFalse($config->getBool('cache'));
     }
+
+    #[Test]
+    public function itGetsBooleanTrueForEachTruthyValue(): void
+    {
+        // Test each truthy value individually to catch MatchArmRemoval mutations
+        $config1 = new StorageConfig('test', ['flag' => '1']);
+        $config2 = new StorageConfig('test', ['flag' => 'true']);
+        $config3 = new StorageConfig('test', ['flag' => 'yes']);
+        $config4 = new StorageConfig('test', ['flag' => 'on']);
+
+        self::assertTrue($config1->getBool('flag'), 'Failed for "1"');
+        self::assertTrue($config2->getBool('flag'), 'Failed for "true"');
+        self::assertTrue($config3->getBool('flag'), 'Failed for "yes"');
+        self::assertTrue($config4->getBool('flag'), 'Failed for "on"');
+    }
+
+    #[Test]
+    public function itGetsBooleanFalseForEachFalsyValue(): void
+    {
+        // Test each falsy value individually to catch MatchArmRemoval mutations
+        $config1 = new StorageConfig('test', ['flag' => '0']);
+        $config2 = new StorageConfig('test', ['flag' => 'false']);
+        $config3 = new StorageConfig('test', ['flag' => 'no']);
+        $config4 = new StorageConfig('test', ['flag' => 'off']);
+
+        self::assertFalse($config1->getBool('flag'), 'Failed for "0"');
+        self::assertFalse($config2->getBool('flag'), 'Failed for "false"');
+        self::assertFalse($config3->getBool('flag'), 'Failed for "no"');
+        self::assertFalse($config4->getBool('flag'), 'Failed for "off"');
+    }
+
+    #[Test]
+    public function itDistinguishesBetweenExistingValueAndDefault(): void
+    {
+        $config1 = new StorageConfig('test', ['value' => 'exists']);
+        $config2 = new StorageConfig('test', []);
+
+        // When value exists, should return the value, not the default
+        self::assertSame('exists', $config1->get('value', 'default'));
+        // When value doesn't exist, should return the default
+        self::assertSame('default', $config2->get('value', 'default'));
+
+        // Test that empty string is still a valid value different from default
+        $config3 = new StorageConfig('test', ['value' => '']);
+        self::assertSame('', $config3->get('value', 'default'));
+    }
 }
