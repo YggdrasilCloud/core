@@ -193,15 +193,24 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          # Check if current branch has an associated PR
-          PR_NUMBER=$(gh pr view --json number --jq '.number' 2>/dev/null || echo "")
+          # Get current branch name
+          BRANCH_NAME=$(git branch --show-current)
+          echo "Current branch: $BRANCH_NAME"
+
+          # Find PR for this branch
+          PR_NUMBER=$(gh pr list \
+            --repo ${{ github.repository }} \
+            --head "$BRANCH_NAME" \
+            --state open \
+            --json number \
+            --jq '.[0].number' 2>/dev/null || echo "")
 
           if [ -z "$PR_NUMBER" ]; then
-            echo "No PR found for current branch, skipping merge"
+            echo "No open PR found for branch $BRANCH_NAME, skipping merge"
             exit 0
           fi
 
-          echo "Found PR #$PR_NUMBER, merging with rebase..."
+          echo "Found PR #$PR_NUMBER for branch $BRANCH_NAME, merging with rebase..."
 
           # Merge PR with rebase and merge strategy
           gh pr merge $PR_NUMBER \
