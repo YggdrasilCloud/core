@@ -243,4 +243,30 @@ final class StorageFactoryTest extends TestCase
         self::assertInstanceOf(LocalStorage::class, $storage);
         // The path should remain var/storage (will be resolved relative to CWD)
     }
+
+    #[Test]
+    public function itOnlyModifiesRelativePathsWhenProjectDirIsSet(): void
+    {
+        // Test that BOTH conditions must be true: projectDir !== null AND !str_starts_with($basePath, '/')
+        // This kills LogicalAnd and LogicalNot mutations on StorageFactory line 59
+
+        $factory1 = new StorageFactory($this->parser, [], '/app');
+        $factory2 = new StorageFactory($this->parser, [], null);
+
+        // projectDir is set AND path is relative -> should be modified
+        $storage1 = $factory1->create('storage://local?root=var/storage');
+        self::assertInstanceOf(LocalStorage::class, $storage1);
+
+        // projectDir is set BUT path is absolute -> should NOT be modified
+        $storage2 = $factory1->create('storage://local?root=/var/storage');
+        self::assertInstanceOf(LocalStorage::class, $storage2);
+
+        // projectDir is null AND path is relative -> should NOT be modified
+        $storage3 = $factory2->create('storage://local?root=var/storage');
+        self::assertInstanceOf(LocalStorage::class, $storage3);
+
+        // projectDir is null AND path is absolute -> should NOT be modified
+        $storage4 = $factory2->create('storage://local?root=/var/storage');
+        self::assertInstanceOf(LocalStorage::class, $storage4);
+    }
 }

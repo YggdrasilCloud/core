@@ -23,6 +23,14 @@ grumphp:
             testsuite: Unit
             always_execute: true
 
+        infection:
+            configuration: infection.json5
+            threads: 4
+            test_framework: phpunit
+            min_msi: 76
+            min_covered_msi: 76
+            triggered_by: ['php']
+
     environment:
         variables:
             EXEC_GRUMPHP_COMMAND: 'docker compose run --rm app'

@@ -188,4 +188,39 @@ final class StorageDsnParserTest extends TestCase
             ['bucket' => 'my-bucket', 'project' => 'my-project'],
         ];
     }
+
+    #[Test]
+    public function itThrowsExceptionWhenSchemeIsSetButWrong(): void
+    {
+        // This test specifically checks that isset($parsed['scheme']) && $parsed['scheme'] !== 'storage'
+        // triggers the exception (kills LogicalOr mutation on line 43)
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('DSN scheme must be "storage", got "http"');
+
+        $this->parser->parse('http://local?root=/var/storage');
+    }
+
+    #[Test]
+    public function itParsesQueryParamsWithIntegerKeys(): void
+    {
+        // Test that integer keys are cast to strings (kills CastString mutations)
+        $dsn = 'storage://local?root=/var/storage&0=value0&1=value1';
+
+        $config = $this->parser->parse($dsn);
+
+        self::assertSame('value0', $config->get('0'));
+        self::assertSame('value1', $config->get('1'));
+    }
+
+    #[Test]
+    public function itHandlesArrayValuesInQueryParams(): void
+    {
+        // Test that array values are converted to empty strings
+        $dsn = 'storage://local?root=/var/storage&tags[]=foo&tags[]=bar';
+
+        $config = $this->parser->parse($dsn);
+
+        // Array values should be converted to empty string as per StorageDsnParser line 67
+        self::assertSame('', $config->get('tags'));
+    }
 }
