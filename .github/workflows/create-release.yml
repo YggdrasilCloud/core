@@ -1,4 +1,4 @@
-name: Pre-release
+name: Create Release
 
 on:
   workflow_dispatch:
@@ -217,7 +217,7 @@ jobs:
             --repo ${{ github.repository }} \
             --rebase \
             --delete-branch \
-            --body "Auto-merged after successful pre-release ${{ inputs.version }}"
+            --body "Auto-merged after successful release ${{ inputs.version }}"
 
           echo "✅ PR #$PR_NUMBER merged successfully"
 
