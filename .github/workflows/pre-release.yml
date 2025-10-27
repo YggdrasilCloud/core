@@ -47,6 +47,11 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
+      - name: Create database schema
+        run: php bin/console doctrine:schema:create --env=test
+        env:
+          APP_ENV: test
+
       - name: Run all quality checks
         run: composer ci
 
