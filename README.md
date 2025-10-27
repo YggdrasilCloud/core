@@ -14,7 +14,7 @@ REST API for photo management built with Domain-Driven Design (DDD) architecture
 ## Tech Stack
 
 - **Framework**: Symfony 7.3
-- **Runtime**: FrankenPHP (PHP 8.3 + Caddy)
+- **Runtime**: FrankenPHP (PHP 8.4 + Caddy)
 - **Database**: PostgreSQL 16
 - **Testing**: PHPUnit 12 + Infection
 - **Architecture**: DDD with CQRS
@@ -467,7 +467,7 @@ These events are currently stored in-memory but can be persisted with the Transa
 ## Docker Services
 
 ### FrankenPHP (php)
-- PHP 8.3 with FrankenPHP (Caddy + PHP)
+- PHP 8.4 with FrankenPHP (Caddy + PHP)
 - Exposed on port 8000
 - Hot-reload with volume mount
 

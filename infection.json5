@@ -18,11 +18,8 @@
         "customPath": "vendor/bin/phpunit"
     },
     "testFramework": "phpunit",
-    // TODO: Restore minMsi and minCoveredMsi to 80 once PHP 8.3/8.4 mutation differences are resolved
-    // Current state: PHP 8.3 ~79%, PHP 8.4 ~78%
-    // Lowered to 78 to accommodate PHP version differences in mutant generation
-    "minMsi": 78,
-    "minCoveredMsi": 78,
+    "minMsi": 80,
+    "minCoveredMsi": 80,
     "mutators": {
         "@default": true,
         "@function_signature": false
