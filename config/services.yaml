@@ -42,7 +42,7 @@ services:
             $allowedMimeTypes: '%photo.allowed_mime_types%'
 
     # Photo Bounded Context - Query handlers
-    # GetPhotoFileHandler and GetPhotoThumbnailHandler now use FileStorageInterface
+    # GetPhotoFileHandler now uses FileStorageInterface
     # which is automatically injected by Symfony's autowiring
 
     # Photo Bounded Context - Thumbnail generator
