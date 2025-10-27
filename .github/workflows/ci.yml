@@ -8,13 +8,8 @@ on:
 
 jobs:
   code-quality:
-    name: Code Quality (PHP ${{ matrix.php-version }})
+    name: Code Quality
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        php-version: ['8.3', '8.4']
 
     steps:
       - name: Checkout code
@@ -23,7 +18,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: '8.4'
           extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, json, pcntl, posix
           coverage: none
           tools: composer:v2
@@ -64,7 +59,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
           extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, json
           coverage: none
           tools: composer:v2
@@ -87,13 +82,8 @@ jobs:
         run: vendor/bin/deptrac analyse --cache-file=.deptrac.cache
 
   tests:
-    name: Tests (PHP ${{ matrix.php-version }})
+    name: Tests
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        php-version: ['8.3', '8.4']
 
     steps:
       - name: Checkout code
@@ -102,7 +92,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: '8.4'
           extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, json, pcntl, posix
           coverage: xdebug
           tools: composer:v2
@@ -136,8 +126,8 @@ jobs:
           vendor/bin/infection \
             --test-framework=phpunit \
             --threads=4 \
-            --min-msi=77 \
-            --min-covered-msi=77 \
+            --min-msi=80 \
+            --min-covered-msi=80 \
             --logger-github \
             --only-covering-test-cases
         env:
@@ -146,7 +136,6 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
-        if: matrix.php-version == '8.3'
         with:
           files: ./coverage.xml
           fail_ci_if_error: false
