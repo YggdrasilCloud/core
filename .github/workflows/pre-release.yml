@@ -176,8 +176,44 @@ jobs:
 
             Full E2E test report: [Workflow run](https://github.com/YggdrasilCloud/tests-e2e/actions)
 
+  merge-pr:
+    needs: [create-release]
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.dry_run }}
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Merge PR if exists
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          # Check if current branch has an associated PR
+          PR_NUMBER=$(gh pr view --json number --jq '.number' 2>/dev/null || echo "")
+
+          if [ -z "$PR_NUMBER" ]; then
+            echo "No PR found for current branch, skipping merge"
+            exit 0
+          fi
+
+          echo "Found PR #$PR_NUMBER, merging with rebase..."
+
+          # Merge PR with rebase and merge strategy
+          gh pr merge $PR_NUMBER \
+            --repo ${{ github.repository }} \
+            --rebase \
+            --delete-branch \
+            --body "Auto-merged after successful pre-release ${{ inputs.version }}"
+
+          echo "✅ PR #$PR_NUMBER merged successfully"
+
   post-tag-verification:
-    needs: [create-release, resolve-frontend-version]
+    needs: [merge-pr, resolve-frontend-version]
     runs-on: ubuntu-latest
     if: ${{ !inputs.dry_run }}
     steps:
