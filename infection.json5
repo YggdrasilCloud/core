@@ -19,10 +19,10 @@
     },
     "testFramework": "phpunit",
     // TODO: Restore minMsi and minCoveredMsi to 80 once PHP 8.3/8.4 mutation differences are resolved
-    // Current state: PHP 8.3: 77.42%, PHP 8.4: higher
-    // Lowered to 77 temporarily to allow PHP 8.3 CI to pass (will be resolved with PHP 8.4-only migration)
-    "minMsi": 77,
-    "minCoveredMsi": 77,
+    // Current state: PHP 8.3 ~79%, PHP 8.4 ~78%
+    // Lowered to 78 to accommodate PHP version differences in mutant generation
+    "minMsi": 78,
+    "minCoveredMsi": 78,
     "mutators": {
         "@default": true,
         "@function_signature": false
