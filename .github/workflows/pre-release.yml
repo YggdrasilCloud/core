@@ -197,20 +197,16 @@ jobs:
           BRANCH_NAME=$(git branch --show-current)
           echo "Current branch: $BRANCH_NAME"
 
-          # Extract owner from repository
-          OWNER=$(echo "${{ github.repository }}" | cut -d'/' -f1)
-          echo "Repository owner: $OWNER"
-
-          # Find PR for this branch (--head requires format "owner:branch")
+          # Find PR for this branch by filtering all open PRs
           PR_NUMBER=$(gh pr list \
             --repo ${{ github.repository }} \
-            --head "${OWNER}:${BRANCH_NAME}" \
             --state open \
-            --json number \
-            --jq '.[0].number' 2>/dev/null || echo "")
+            --json number,headRefName \
+            --jq ".[] | select(.headRefName == \"$BRANCH_NAME\") | .number" \
+            2>/dev/null || echo "")
 
           if [ -z "$PR_NUMBER" ]; then
-            echo "No open PR found for branch ${OWNER}:${BRANCH_NAME}, skipping merge"
+            echo "No open PR found for branch $BRANCH_NAME, skipping merge"
             exit 0
           fi
 
