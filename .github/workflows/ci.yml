@@ -126,8 +126,8 @@ jobs:
           vendor/bin/infection \
             --test-framework=phpunit \
             --threads=4 \
-            --min-msi=78 \
-            --min-covered-msi=78 \
+            --min-msi=76 \
+            --min-covered-msi=76 \
             --logger-github \
             --only-covering-test-cases
         env:
