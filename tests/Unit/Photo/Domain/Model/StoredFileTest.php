@@ -20,9 +20,9 @@ final class StoredFileTest extends TestCase
     {
         $file = StoredFile::create('2025/10/11/photo.jpg', 'image/jpeg', 1024);
 
-        self::assertSame('2025/10/11/photo.jpg', $file->storagePath());
-        self::assertSame('image/jpeg', $file->mimeType());
-        self::assertSame(1024, $file->sizeInBytes());
+        self::assertSame('2025/10/11/photo.jpg', $file->storagePath);
+        self::assertSame('image/jpeg', $file->mimeType);
+        self::assertSame(1024, $file->sizeInBytes);
     }
 
     public function testCreateRejectsEmptyStoragePath(): void
@@ -77,7 +77,7 @@ final class StoredFileTest extends TestCase
     {
         $file = StoredFile::create('photo.jpg', 'image/jpeg', 0);
 
-        self::assertSame(0, $file->sizeInBytes());
+        self::assertSame(0, $file->sizeInBytes);
     }
 
     #[DataProvider('provideCreateAcceptsVariousImageMimeTypesCases')]
@@ -85,7 +85,7 @@ final class StoredFileTest extends TestCase
     {
         $file = StoredFile::create('photo.jpg', $mimeType, 1024);
 
-        self::assertSame($mimeType, $file->mimeType());
+        self::assertSame($mimeType, $file->mimeType);
     }
 
     public static function provideCreateAcceptsVariousImageMimeTypesCases(): iterable

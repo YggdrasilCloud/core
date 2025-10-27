@@ -10,11 +10,17 @@ use function sprintf;
 
 final readonly class StoredFile
 {
+    /**
+     * @param string      $storagePath   File storage path
+     * @param string      $mimeType      MIME type (must start with 'image/')
+     * @param int         $sizeInBytes   File size in bytes
+     * @param null|string $thumbnailPath Optional thumbnail path
+     */
     private function __construct(
-        private string $storagePath,
-        private string $mimeType,
-        private int $sizeInBytes,
-        private ?string $thumbnailPath = null,
+        public string $storagePath,
+        public string $mimeType,
+        public int $sizeInBytes,
+        public ?string $thumbnailPath = null,
     ) {}
 
     public static function create(
@@ -40,25 +46,5 @@ final readonly class StoredFile
         }
 
         return new self($storagePath, $mimeType, $sizeInBytes, $thumbnailPath);
-    }
-
-    public function storagePath(): string
-    {
-        return $this->storagePath;
-    }
-
-    public function mimeType(): string
-    {
-        return $this->mimeType;
-    }
-
-    public function sizeInBytes(): int
-    {
-        return $this->sizeInBytes;
-    }
-
-    public function thumbnailPath(): ?string
-    {
-        return $this->thumbnailPath;
     }
 }
