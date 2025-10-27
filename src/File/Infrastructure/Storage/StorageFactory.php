@@ -70,10 +70,13 @@ final readonly class StorageFactory
         }
 
         // Try registered bridges
-        foreach ($this->bridges as $bridge) {
-            if ($bridge->supports($config->driver)) {
-                return $bridge->create($config);
-            }
+        $bridge = array_find(
+            [...$this->bridges],
+            static fn (StorageBridgeInterface $bridge): bool => $bridge->supports($config->driver)
+        );
+
+        if ($bridge !== null) {
+            return $bridge->create($config);
         }
 
         // No adapter found

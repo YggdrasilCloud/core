@@ -51,11 +51,16 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
 
         // Handle Symfony Messenger's HandlerFailedException which stores wrapped exceptions
         if ($exception instanceof HandlerFailedException) {
-            foreach ($exception->getWrappedExceptions() as $wrappedException) {
-                $found = $this->findFolderNotFoundException($wrappedException);
-                if ($found !== null) {
-                    return $found;
-                }
+            $found = array_find(
+                array_map(
+                    fn (Throwable $e): ?FolderNotFoundException => $this->findFolderNotFoundException($e),
+                    $exception->getWrappedExceptions()
+                ),
+                static fn (?FolderNotFoundException $result): bool => $result !== null
+            );
+
+            if ($found !== null) {
+                return $found;
             }
         }
 
