@@ -79,7 +79,7 @@
         "test": "phpunit --no-coverage",
         "test:unit": "phpunit --no-coverage --testsuite=Unit",
         "test:functional": "phpunit --no-coverage --testsuite=Functional",
-        "infection": "infection --threads=4 --min-msi=100 --min-covered-msi=100",
+        "infection": "infection --threads=4",
         "qual": [
             "@cs:check",
             "@stan"
