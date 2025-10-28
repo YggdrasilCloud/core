@@ -197,21 +197,12 @@ jobs:
           BRANCH_NAME=$(git branch --show-current)
           echo "Current branch: $BRANCH_NAME"
 
-          # Debug: List all open PRs
-          echo "Listing all open PRs:"
-          gh pr list \
-            --repo ${{ github.repository }} \
-            --state open \
-            --json number,headRefName
-
           # Find PR for this branch by filtering all open PRs
           PR_NUMBER=$(gh pr list \
             --repo ${{ github.repository }} \
             --state open \
             --json number,headRefName | \
             jq -r ".[] | select(.headRefName == \"${BRANCH_NAME}\") | .number")
-
-          echo "PR_NUMBER found: '$PR_NUMBER'"
 
           if [ -z "$PR_NUMBER" ]; then
             echo "No open PR found for branch $BRANCH_NAME, skipping merge"
