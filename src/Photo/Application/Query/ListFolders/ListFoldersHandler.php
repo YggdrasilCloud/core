@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Photo\Application\Query\ListFolders;
 
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
+use App\Photo\UserInterface\Http\Request\FolderQueryParams;
 use DateTimeInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -17,7 +18,11 @@ final readonly class ListFoldersHandler
 
     public function __invoke(ListFoldersQuery $query): ListFoldersResult
     {
-        $folders = $this->folderRepository->findAll();
+        $queryParams = $query->queryParams ?? new FolderQueryParams();
+        $offset = max(0, min(PHP_INT_MAX, ($query->page - 1) * $query->perPage));
+
+        $folders = $this->folderRepository->findAll($queryParams, $query->perPage, $offset);
+        $total = $this->folderRepository->count($queryParams);
 
         $items = array_map(
             static fn ($folder) => new FolderDto(
@@ -29,6 +34,12 @@ final readonly class ListFoldersHandler
             $folders
         );
 
-        return new ListFoldersResult($items);
+        return new ListFoldersResult(
+            $items,
+            $query->page,
+            $query->perPage,
+            $total,
+            $queryParams,
+        );
     }
 }
