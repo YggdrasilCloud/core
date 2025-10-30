@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Photo\UserInterface\Http\Request;
 
 use DateTimeImmutable;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Query parameters for listing, sorting, and filtering folders.
@@ -95,5 +96,60 @@ final readonly class FolderQueryParams
         }
 
         return $count;
+    }
+
+    /**
+     * Extract and normalize query parameters from HTTP request.
+     *
+     * @throws \InvalidArgumentException If parameters are invalid
+     */
+    public static function fromRequest(Request $request): self
+    {
+        $sortBy = $request->query->get('sortBy', 'name');
+        $sortOrder = $request->query->get('sortOrder', 'asc');
+        $search = $request->query->get('search');
+
+        // Parse date range (ISO 8601 format)
+        $dateFrom = self::parseDateParam($request->query->get('dateFrom'));
+        $dateTo = self::parseDateParam($request->query->get('dateTo'));
+
+        return new self(
+            sortBy: is_string($sortBy) ? $sortBy : 'name',
+            sortOrder: is_string($sortOrder) ? $sortOrder : 'asc',
+            search: is_string($search) && $search !== '' ? $search : null,
+            dateFrom: $dateFrom,
+            dateTo: $dateTo,
+        );
+    }
+
+    /**
+     * Parse ISO 8601 date string into DateTimeImmutable.
+     *
+     * @throws \InvalidArgumentException If date format is invalid
+     */
+    private static function parseDateParam(mixed $value): ?DateTimeImmutable
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (!is_string($value)) {
+            throw new \InvalidArgumentException('Date parameter must be a string in ISO 8601 format');
+        }
+
+        $date = DateTimeImmutable::createFromFormat(DateTimeImmutable::ATOM, $value);
+
+        if ($date === false) {
+            // Try fallback format without timezone
+            $date = DateTimeImmutable::createFromFormat('Y-m-d\TH:i:s', $value);
+        }
+
+        if ($date === false) {
+            throw new \InvalidArgumentException(
+                sprintf('Invalid date format "%s". Expected ISO 8601 format (e.g., 2025-10-30T20:00:00Z)', $value)
+            );
+        }
+
+        return $date;
     }
 }
