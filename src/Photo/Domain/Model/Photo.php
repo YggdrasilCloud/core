@@ -23,6 +23,7 @@ final class Photo
         private int $sizeInBytes,
         private ?string $thumbnailKey,
         private DateTimeImmutable $uploadedAt,
+        private ?DateTimeImmutable $takenAt,
     ) {}
 
     public static function upload(
@@ -35,6 +36,7 @@ final class Photo
         string $mimeType,
         int $sizeInBytes,
         ?string $thumbnailKey = null,
+        ?DateTimeImmutable $takenAt = null,
     ): self {
         $photo = new self(
             $id,
@@ -47,6 +49,7 @@ final class Photo
             $sizeInBytes,
             $thumbnailKey,
             new DateTimeImmutable(),
+            $takenAt,
         );
 
         $photo->recordEvent(new PhotoUploaded(
@@ -110,6 +113,11 @@ final class Photo
     public function uploadedAt(): DateTimeImmutable
     {
         return $this->uploadedAt;
+    }
+
+    public function takenAt(): ?DateTimeImmutable
+    {
+        return $this->takenAt;
     }
 
     /**

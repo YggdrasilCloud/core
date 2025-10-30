@@ -43,6 +43,9 @@ class PhotoEntity
     #[ORM\Column(type: 'datetime_immutable')]
     private DateTimeImmutable $uploadedAt;
 
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?DateTimeImmutable $takenAt = null;
+
     public function __construct(
         string $id,
         string $folderId,
@@ -54,6 +57,7 @@ class PhotoEntity
         int $sizeInBytes,
         DateTimeImmutable $uploadedAt,
         ?string $thumbnailKey = null,
+        ?DateTimeImmutable $takenAt = null,
     ) {
         $this->id = $id;
         $this->folderId = $folderId;
@@ -65,6 +69,7 @@ class PhotoEntity
         $this->sizeInBytes = $sizeInBytes;
         $this->thumbnailKey = $thumbnailKey;
         $this->uploadedAt = $uploadedAt;
+        $this->takenAt = $takenAt;
     }
 
     public function getId(): string
@@ -120,5 +125,10 @@ class PhotoEntity
     public function setThumbnailKey(?string $thumbnailKey): void
     {
         $this->thumbnailKey = $thumbnailKey;
+    }
+
+    public function getTakenAt(): ?DateTimeImmutable
+    {
+        return $this->takenAt;
     }
 }
