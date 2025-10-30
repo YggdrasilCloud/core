@@ -6,6 +6,8 @@ namespace App\Photo\UserInterface\Http\Controller;
 
 use App\Photo\Application\Query\GetFolderChildren\GetFolderChildrenQuery;
 use App\Photo\Application\Query\GetFolderChildren\GetFolderChildrenResult;
+use App\Photo\UserInterface\Http\Request\FolderQueryParams;
+use App\Photo\UserInterface\Http\Request\PaginationParams;
 use App\Shared\UserInterface\Http\Responder\JsonResponder;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,10 +23,18 @@ final readonly class GetFolderChildrenController
     ) {}
 
     #[Route('/api/folders/{id}/children', name: 'get_folder_children', methods: ['GET'])]
-    public function __invoke(string $id): Response
-    {
+    public function __invoke(
+        string $id,
+        PaginationParams $pagination,
+        FolderQueryParams $queryParams
+    ): Response {
         try {
-            $envelope = $this->queryBus->dispatch(new GetFolderChildrenQuery($id));
+            $envelope = $this->queryBus->dispatch(new GetFolderChildrenQuery(
+                $id,
+                $pagination->page,
+                $pagination->perPage,
+                $queryParams,
+            ));
 
             /** @var HandledStamp $stamp */
             $stamp = $envelope->last(HandledStamp::class);
@@ -33,7 +43,7 @@ final readonly class GetFolderChildrenController
             $result = $stamp->getResult();
 
             return $this->responder->success([
-                'children' => array_map(
+                'data' => array_map(
                     static fn ($child) => [
                         'id' => $child->id,
                         'name' => $child->name,
@@ -41,6 +51,19 @@ final readonly class GetFolderChildrenController
                     ],
                     $result->children
                 ),
+                'pagination' => [
+                    'page' => $result->page,
+                    'perPage' => $result->perPage,
+                    'total' => $result->total,
+                ],
+                'filters' => [
+                    'sortBy' => $result->queryParams->sortBy,
+                    'sortOrder' => $result->queryParams->sortOrder,
+                    'search' => $result->queryParams->search,
+                    'dateFrom' => $result->queryParams->dateFrom?->format(\DateTimeInterface::ATOM),
+                    'dateTo' => $result->queryParams->dateTo?->format(\DateTimeInterface::ATOM),
+                    'appliedFilters' => $result->queryParams->countAppliedFilters(),
+                ],
             ]);
         } catch (InvalidArgumentException $e) {
             return $this->responder->notFound($e->getMessage());
