@@ -10,7 +10,9 @@ use App\Photo\Domain\Model\PhotoId;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
 use App\Photo\Infrastructure\Persistence\Doctrine\Entity\PhotoEntity;
 use App\Photo\Infrastructure\Persistence\Doctrine\Mapper\PhotoMapper;
+use App\Photo\UserInterface\Http\Request\PhotoQueryParams;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\QueryBuilder;
 
 final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
 {
@@ -47,23 +49,33 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
     /**
      * @return list<Photo>
      */
-    public function findByFolderId(FolderId $folderId, int $limit, int $offset): array
-    {
+    public function findByFolderId(
+        FolderId $folderId,
+        PhotoQueryParams $queryParams,
+        int $limit,
+        int $offset
+    ): array {
         // Ensure limit and offset are always valid to prevent DQL errors
         $safeLimit = max(1, $limit);
         $safeOffset = max(0, $offset);
 
-        $entities = $this->entityManager->createQueryBuilder()
+        $qb = $this->entityManager->createQueryBuilder()
             ->select('p')
             ->from(PhotoEntity::class, 'p')
             ->where('p.folderId = :folderId')
-            ->setParameter('folderId', $folderId->toString())
-            ->orderBy('p.uploadedAt', 'DESC')
+            ->setParameter('folderId', $folderId->toString());
+
+        // Apply filters
+        $this->applyFilters($qb, $queryParams);
+
+        // Apply sorting
+        $this->applySorting($qb, $queryParams);
+
+        $entities = $qb
             ->setMaxResults($safeLimit)
             ->setFirstResult($safeOffset)
             ->getQuery()
-            ->getResult()
-        ;
+            ->getResult();
 
         return array_map(
             static fn (PhotoEntity $entity) => PhotoMapper::toDomain($entity),
@@ -71,16 +83,84 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
         );
     }
 
-    public function countByFolderId(FolderId $folderId): int
+    public function countByFolderId(FolderId $folderId, PhotoQueryParams $queryParams): int
     {
-        return (int) $this->entityManager->createQueryBuilder()
+        $qb = $this->entityManager->createQueryBuilder()
             ->select('COUNT(p.id)')
             ->from(PhotoEntity::class, 'p')
             ->where('p.folderId = :folderId')
-            ->setParameter('folderId', $folderId->toString())
-            ->getQuery()
-            ->getSingleScalarResult()
-        ;
+            ->setParameter('folderId', $folderId->toString());
+
+        // Apply same filters for accurate count
+        $this->applyFilters($qb, $queryParams);
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Apply filtering criteria to query builder.
+     */
+    private function applyFilters(QueryBuilder $qb, PhotoQueryParams $queryParams): void
+    {
+        // Search by filename (case-insensitive substring)
+        if ($queryParams->search !== null) {
+            $qb->andWhere('LOWER(p.fileName) LIKE LOWER(:search)')
+                ->setParameter('search', '%' . $queryParams->search . '%');
+        }
+
+        // Filter by MIME types
+        if ($queryParams->mimeTypes !== []) {
+            $qb->andWhere('p.mimeType IN (:mimeTypes)')
+                ->setParameter('mimeTypes', $queryParams->mimeTypes);
+        }
+
+        // Filter by file extensions
+        if ($queryParams->extensions !== []) {
+            $extensionConditions = [];
+            foreach ($queryParams->extensions as $index => $extension) {
+                $paramName = 'ext_' . $index;
+                $extensionConditions[] = "p.fileName LIKE :$paramName";
+                $qb->setParameter($paramName, '%.' . $extension);
+            }
+            $qb->andWhere($qb->expr()->orX(...$extensionConditions));
+        }
+
+        // Filter by size range
+        if ($queryParams->sizeMin !== null) {
+            $qb->andWhere('p.sizeInBytes >= :sizeMin')
+                ->setParameter('sizeMin', $queryParams->sizeMin);
+        }
+        if ($queryParams->sizeMax !== null) {
+            $qb->andWhere('p.sizeInBytes <= :sizeMax')
+                ->setParameter('sizeMax', $queryParams->sizeMax);
+        }
+
+        // Filter by date range (prefer takenAt if available, fallback to uploadedAt)
+        if ($queryParams->dateFrom !== null) {
+            $qb->andWhere('COALESCE(p.takenAt, p.uploadedAt) >= :dateFrom')
+                ->setParameter('dateFrom', $queryParams->dateFrom);
+        }
+        if ($queryParams->dateTo !== null) {
+            $qb->andWhere('COALESCE(p.takenAt, p.uploadedAt) <= :dateTo')
+                ->setParameter('dateTo', $queryParams->dateTo);
+        }
+    }
+
+    /**
+     * Apply sorting criteria to query builder.
+     */
+    private function applySorting(QueryBuilder $qb, PhotoQueryParams $queryParams): void
+    {
+        $sortOrder = strtoupper($queryParams->sortOrder);
+
+        match ($queryParams->sortBy) {
+            'uploadedAt' => $qb->orderBy('p.uploadedAt', $sortOrder),
+            'takenAt' => $qb->orderBy('COALESCE(p.takenAt, p.uploadedAt)', $sortOrder),
+            'fileName' => $qb->orderBy('p.fileName', $sortOrder),
+            'sizeInBytes' => $qb->orderBy('p.sizeInBytes', $sortOrder),
+            'mimeType' => $qb->orderBy('p.mimeType', $sortOrder),
+            default => $qb->orderBy('p.uploadedAt', 'DESC'), // Fallback
+        };
     }
 
     public function remove(Photo $photo): void
