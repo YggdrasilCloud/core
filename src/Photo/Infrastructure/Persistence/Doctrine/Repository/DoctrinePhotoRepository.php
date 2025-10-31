@@ -175,19 +175,23 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
      * This ensures photos without EXIF capture date (takenAt = null) fall back to
      * upload date for sorting, preventing null values from appearing at the beginning
      * or end depending on database NULL collation.
+     *
+     * All sorts include a secondary sort by ID to ensure stable pagination.
+     * Without secondary sorting, photos with identical primary sort values (e.g., same uploadedAt)
+     * would be returned in non-deterministic order, causing duplicates across page boundaries.
      */
     private function applySorting(QueryBuilder $qb, PhotoQueryParams $queryParams): void
     {
         $sortOrder = strtoupper($queryParams->sortOrder);
 
         match ($queryParams->sortBy) {
-            'uploadedAt' => $qb->orderBy('p.uploadedAt', $sortOrder),
+            'uploadedAt' => $qb->orderBy('p.uploadedAt', $sortOrder)->addOrderBy('p.id', $sortOrder),
             // COALESCE ensures photos without EXIF date use uploadedAt for consistent sorting
-            'takenAt' => $qb->orderBy('COALESCE(p.takenAt, p.uploadedAt)', $sortOrder),
-            'fileName' => $qb->orderBy('p.fileName', $sortOrder),
-            'sizeInBytes' => $qb->orderBy('p.sizeInBytes', $sortOrder),
-            'mimeType' => $qb->orderBy('p.mimeType', $sortOrder),
-            default => $qb->orderBy('p.uploadedAt', 'DESC'), // Fallback
+            'takenAt' => $qb->orderBy('COALESCE(p.takenAt, p.uploadedAt)', $sortOrder)->addOrderBy('p.id', $sortOrder),
+            'fileName' => $qb->orderBy('p.fileName', $sortOrder)->addOrderBy('p.id', $sortOrder),
+            'sizeInBytes' => $qb->orderBy('p.sizeInBytes', $sortOrder)->addOrderBy('p.id', $sortOrder),
+            'mimeType' => $qb->orderBy('p.mimeType', $sortOrder)->addOrderBy('p.id', $sortOrder),
+            default => $qb->orderBy('p.uploadedAt', 'DESC')->addOrderBy('p.id', 'DESC'), // Fallback
         };
     }
 }
