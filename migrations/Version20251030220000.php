@@ -19,7 +19,7 @@ final class Version20251030220000 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        $this->addSql('ALTER TABLE photos ADD taken_at DATETIME DEFAULT NULL');
+        $this->addSql('ALTER TABLE photos ADD taken_at TIMESTAMP DEFAULT NULL');
         $this->addSql('CREATE INDEX IF NOT EXISTS idx_photos_taken_at ON photos(taken_at)');
     }
 
