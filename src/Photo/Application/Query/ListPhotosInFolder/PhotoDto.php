@@ -13,6 +13,7 @@ final readonly class PhotoDto
         public string $mimeType,
         public int $sizeInBytes,
         public string $uploadedAt,
+        public ?string $takenAt,
         public string $fileUrl,
         public ?string $thumbnailUrl,
     ) {}

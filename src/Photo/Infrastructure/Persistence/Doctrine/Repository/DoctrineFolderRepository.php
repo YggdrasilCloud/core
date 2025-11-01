@@ -9,7 +9,9 @@ use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\Infrastructure\Persistence\Doctrine\Entity\FolderEntity;
 use App\Photo\Infrastructure\Persistence\Doctrine\Mapper\FolderMapper;
+use App\Photo\UserInterface\Http\Request\FolderQueryParams;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\QueryBuilder;
 
 final readonly class DoctrineFolderRepository implements FolderRepositoryInterface
 {
@@ -57,12 +59,26 @@ final readonly class DoctrineFolderRepository implements FolderRepositoryInterfa
     /**
      * @return list<Folder>
      */
-    public function findAll(): array
+    public function findAll(FolderQueryParams $queryParams, int $limit, int $offset): array
     {
-        $entities = $this->entityManager
-            ->getRepository(FolderEntity::class)
-            ->findAll()
-        ;
+        $safeLimit = max(1, $limit);
+        $safeOffset = max(0, $offset);
+
+        $qb = $this->entityManager->createQueryBuilder()
+            ->select('f')
+            ->from(FolderEntity::class, 'f');
+
+        // Apply filters
+        $this->applyFilters($qb, $queryParams);
+
+        // Apply sorting
+        $this->applySorting($qb, $queryParams);
+
+        $entities = $qb
+            ->setMaxResults($safeLimit)
+            ->setFirstResult($safeOffset)
+            ->getQuery()
+            ->getResult();
 
         return array_map(
             static fn (FolderEntity $entity) => FolderMapper::toDomain($entity),
@@ -70,21 +86,101 @@ final readonly class DoctrineFolderRepository implements FolderRepositoryInterfa
         );
     }
 
+    public function count(FolderQueryParams $queryParams): int
+    {
+        $qb = $this->entityManager->createQueryBuilder()
+            ->select('COUNT(f.id)')
+            ->from(FolderEntity::class, 'f');
+
+        // Apply same filters for accurate count
+        $this->applyFilters($qb, $queryParams);
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
     /**
-     * Find all folders with given parent ID.
-     *
      * @return list<Folder>
      */
-    public function findByParentId(FolderId $parentId): array
-    {
-        $entities = $this->entityManager
-            ->getRepository(FolderEntity::class)
-            ->findBy(['parentId' => $parentId->toString()], ['name' => 'ASC'])
-        ;
+    public function findByParentId(
+        FolderId $parentId,
+        FolderQueryParams $queryParams,
+        int $limit,
+        int $offset
+    ): array {
+        $safeLimit = max(1, $limit);
+        $safeOffset = max(0, $offset);
+
+        $qb = $this->entityManager->createQueryBuilder()
+            ->select('f')
+            ->from(FolderEntity::class, 'f')
+            ->where('f.parentId = :parentId')
+            ->setParameter('parentId', $parentId->toString());
+
+        // Apply filters
+        $this->applyFilters($qb, $queryParams);
+
+        // Apply sorting
+        $this->applySorting($qb, $queryParams);
+
+        $entities = $qb
+            ->setMaxResults($safeLimit)
+            ->setFirstResult($safeOffset)
+            ->getQuery()
+            ->getResult();
 
         return array_map(
             static fn (FolderEntity $entity) => FolderMapper::toDomain($entity),
             $entities
         );
+    }
+
+    public function countByParentId(FolderId $parentId, FolderQueryParams $queryParams): int
+    {
+        $qb = $this->entityManager->createQueryBuilder()
+            ->select('COUNT(f.id)')
+            ->from(FolderEntity::class, 'f')
+            ->where('f.parentId = :parentId')
+            ->setParameter('parentId', $parentId->toString());
+
+        // Apply same filters for accurate count
+        $this->applyFilters($qb, $queryParams);
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Apply filtering criteria to query builder.
+     */
+    private function applyFilters(QueryBuilder $qb, FolderQueryParams $queryParams): void
+    {
+        // Search by folder name (case-insensitive substring)
+        if ($queryParams->search !== null) {
+            $qb->andWhere('LOWER(f.name) LIKE LOWER(:search)')
+                ->setParameter('search', '%' . $queryParams->search . '%');
+        }
+
+        // Filter by creation date range
+        if ($queryParams->dateFrom !== null) {
+            $qb->andWhere('f.createdAt >= :dateFrom')
+                ->setParameter('dateFrom', $queryParams->dateFrom);
+        }
+        if ($queryParams->dateTo !== null) {
+            $qb->andWhere('f.createdAt <= :dateTo')
+                ->setParameter('dateTo', $queryParams->dateTo);
+        }
+    }
+
+    /**
+     * Apply sorting criteria to query builder.
+     */
+    private function applySorting(QueryBuilder $qb, FolderQueryParams $queryParams): void
+    {
+        $sortOrder = strtoupper($queryParams->sortOrder);
+
+        match ($queryParams->sortBy) {
+            'name' => $qb->orderBy('f.name', $sortOrder),
+            'createdAt' => $qb->orderBy('f.createdAt', $sortOrder),
+            default => $qb->orderBy('f.name', 'ASC'), // Fallback
+        };
     }
 }

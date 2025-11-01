@@ -7,6 +7,7 @@ namespace App\Photo\Domain\Repository;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\Photo;
 use App\Photo\Domain\Model\PhotoId;
+use App\Photo\UserInterface\Http\Request\PhotoQueryParams;
 
 interface PhotoRepositoryInterface
 {
@@ -15,11 +16,21 @@ interface PhotoRepositoryInterface
     public function findById(PhotoId $id): ?Photo;
 
     /**
+     * Find photos by folder with optional sorting and filtering.
+     *
      * @return list<Photo>
      */
-    public function findByFolderId(FolderId $folderId, int $limit, int $offset): array;
+    public function findByFolderId(
+        FolderId $folderId,
+        PhotoQueryParams $queryParams,
+        int $limit,
+        int $offset
+    ): array;
 
-    public function countByFolderId(FolderId $folderId): int;
+    /**
+     * Count photos by folder with optional filtering.
+     */
+    public function countByFolderId(FolderId $folderId, PhotoQueryParams $queryParams): int;
 
     public function remove(Photo $photo): void;
 }

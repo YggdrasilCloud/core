@@ -27,6 +27,7 @@ final class PhotoMapper
             $photo->sizeInBytes(),
             $photo->uploadedAt(),
             $photo->thumbnailKey(),
+            $photo->takenAt(),
         );
     }
 
@@ -64,6 +65,9 @@ final class PhotoMapper
 
         $uploadedAtProperty = $reflection->getProperty('uploadedAt');
         $uploadedAtProperty->setValue($photo, $entity->getUploadedAt());
+
+        $takenAtProperty = $reflection->getProperty('takenAt');
+        $takenAtProperty->setValue($photo, $entity->getTakenAt());
 
         $eventsProperty = $reflection->getProperty('domainEvents');
         $eventsProperty->setValue($photo, []);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\Application\Query\ListPhotosInFolder;
 
+use App\Photo\UserInterface\Http\Request\PhotoQueryParams;
 use InvalidArgumentException;
 
 final readonly class ListPhotosInFolderQuery
@@ -12,6 +13,7 @@ final readonly class ListPhotosInFolderQuery
         public string $folderId,
         public int $page = 1,
         public int $perPage = 20,
+        public ?PhotoQueryParams $queryParams = null,
     ) {
         if ($page < 1) {
             throw new InvalidArgumentException('Page must be greater than or equal to 1');

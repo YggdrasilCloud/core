@@ -6,6 +6,7 @@ namespace App\Photo\Application\Query\ListPhotosInFolder;
 
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
+use App\Photo\UserInterface\Http\Request\PhotoQueryParams;
 use DateTimeInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -19,6 +20,7 @@ final readonly class ListPhotosInFolderHandler
     public function __invoke(ListPhotosInFolderQuery $query): ListPhotosInFolderResult
     {
         $folderId = FolderId::fromString($query->folderId);
+        $queryParams = $query->queryParams ?? new PhotoQueryParams();
 
         // Protect against integer overflow for very high page numbers
         // max(0, ...) ensures offset is never negative
@@ -26,11 +28,12 @@ final readonly class ListPhotosInFolderHandler
 
         $photos = $this->photoRepository->findByFolderId(
             $folderId,
+            $queryParams,
             $query->perPage,
             $offset,
         );
 
-        $total = $this->photoRepository->countByFolderId($folderId);
+        $total = $this->photoRepository->countByFolderId($folderId, $queryParams);
 
         $photoDtos = array_map(
             static fn ($photo) => new PhotoDto(
@@ -40,6 +43,7 @@ final readonly class ListPhotosInFolderHandler
                 $photo->mimeType(),
                 $photo->sizeInBytes(),
                 $photo->uploadedAt()->format(DateTimeInterface::ATOM),
+                $photo->takenAt()?->format(DateTimeInterface::ATOM),
                 '/api/photos/'.$photo->id()->toString().'/file',
                 $photo->thumbnailKey() !== null
                     ? '/api/photos/'.$photo->id()->toString().'/thumbnail'
@@ -53,6 +57,7 @@ final readonly class ListPhotosInFolderHandler
             $query->page,
             $query->perPage,
             $total,
+            $queryParams,
         );
     }
 }
