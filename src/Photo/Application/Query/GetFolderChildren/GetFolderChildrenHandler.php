@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Photo\Application\Query\GetFolderChildren;
 
+use App\Photo\Application\Criteria\FolderCriteria;
 use App\Photo\Application\Query\ListFolders\FolderDto;
 use App\Photo\Domain\Exception\FolderNotFoundException;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
-use App\Photo\UserInterface\Http\Request\FolderQueryParams;
 use DateTimeInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -22,7 +22,7 @@ final readonly class GetFolderChildrenHandler
     public function __invoke(GetFolderChildrenQuery $query): GetFolderChildrenResult
     {
         $parentId = FolderId::fromString($query->parentId);
-        $queryParams = $query->queryParams ?? new FolderQueryParams();
+        $criteria = $query->criteria ?? new FolderCriteria();
 
         // Validate parent exists
         $parent = $this->folderRepository->findById($parentId);
@@ -35,12 +35,12 @@ final readonly class GetFolderChildrenHandler
 
         $folders = $this->folderRepository->findByParentId(
             $parentId,
-            $queryParams,
+            $criteria,
             $query->perPage,
             $offset,
         );
 
-        $total = $this->folderRepository->countByParentId($parentId, $queryParams);
+        $total = $this->folderRepository->countByParentId($parentId, $criteria);
 
         $children = array_map(
             static fn ($folder) => new FolderDto(
@@ -56,7 +56,7 @@ final readonly class GetFolderChildrenHandler
             $query->page,
             $query->perPage,
             $total,
-            $queryParams,
+            $criteria,
         );
     }
 }

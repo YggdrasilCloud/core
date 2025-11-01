@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\Application\Query\ListPhotosInFolder;
 
-use App\Photo\UserInterface\Http\Request\PhotoQueryParams;
+use App\Photo\Application\Criteria\PhotoCriteria;
 
 final readonly class ListPhotosInFolderResult
 {
@@ -16,6 +16,6 @@ final readonly class ListPhotosInFolderResult
         public int $page,
         public int $perPage,
         public int $total,
-        public PhotoQueryParams $queryParams,
+        public PhotoCriteria $criteria,
     ) {}
 }

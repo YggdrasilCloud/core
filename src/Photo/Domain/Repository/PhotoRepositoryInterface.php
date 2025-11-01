@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Photo\Domain\Repository;
 
+use App\Photo\Application\Criteria\PhotoCriteria;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\Photo;
 use App\Photo\Domain\Model\PhotoId;
-use App\Photo\UserInterface\Http\Request\PhotoQueryParams;
 
 interface PhotoRepositoryInterface
 {
@@ -22,7 +22,7 @@ interface PhotoRepositoryInterface
      */
     public function findByFolderId(
         FolderId $folderId,
-        PhotoQueryParams $queryParams,
+        PhotoCriteria $criteria,
         int $limit,
         int $offset
     ): array;
@@ -30,7 +30,7 @@ interface PhotoRepositoryInterface
     /**
      * Count photos by folder with optional filtering.
      */
-    public function countByFolderId(FolderId $folderId, PhotoQueryParams $queryParams): int;
+    public function countByFolderId(FolderId $folderId, PhotoCriteria $criteria): int;
 
     public function remove(Photo $photo): void;
 }

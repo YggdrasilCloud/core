@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\Application\Query\ListFolders;
 
-use App\Photo\UserInterface\Http\Request\FolderQueryParams;
+use App\Photo\Application\Criteria\FolderCriteria;
 use InvalidArgumentException;
 
 final readonly class ListFoldersQuery
@@ -12,7 +12,7 @@ final readonly class ListFoldersQuery
     public function __construct(
         public int $page = 1,
         public int $perPage = 50,
-        public ?FolderQueryParams $queryParams = null,
+        public ?FolderCriteria $criteria = null,
     ) {
         if ($page < 1) {
             throw new InvalidArgumentException('Page must be greater than or equal to 1');

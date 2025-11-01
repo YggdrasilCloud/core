@@ -8,6 +8,7 @@ use App\Photo\Application\Query\ListFolders\ListFoldersQuery;
 use App\Photo\UserInterface\Http\Request\FolderQueryParams;
 use App\Photo\UserInterface\Http\Request\PaginationParams;
 use App\Shared\UserInterface\Http\Responder\JsonResponder;
+use DateTimeInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\HandledStamp;
@@ -28,7 +29,7 @@ final readonly class ListFoldersController
         $envelope = $this->queryBus->dispatch(new ListFoldersQuery(
             $pagination->page,
             $pagination->perPage,
-            $queryParams,
+            $queryParams->toCriteria(),
         ));
         $result = $envelope->last(HandledStamp::class)?->getResult();
 
@@ -50,12 +51,12 @@ final readonly class ListFoldersController
                 'total' => $result->total,
             ],
             'filters' => [
-                'sortBy' => $result->queryParams->sortBy,
-                'sortOrder' => $result->queryParams->sortOrder,
-                'search' => $result->queryParams->search,
-                'dateFrom' => $result->queryParams->dateFrom?->format(\DateTimeInterface::ATOM),
-                'dateTo' => $result->queryParams->dateTo?->format(\DateTimeInterface::ATOM),
-                'appliedFilters' => $result->queryParams->countAppliedFilters(),
+                'sortBy' => $result->criteria->sortBy,
+                'sortOrder' => $result->criteria->sortOrder,
+                'search' => $result->criteria->search,
+                'dateFrom' => $result->criteria->dateFrom?->format(DateTimeInterface::ATOM),
+                'dateTo' => $result->criteria->dateTo?->format(DateTimeInterface::ATOM),
+                'appliedFilters' => $result->criteria->countAppliedFilters(),
             ],
         ]);
     }

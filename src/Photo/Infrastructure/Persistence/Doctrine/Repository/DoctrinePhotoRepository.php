@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Photo\Infrastructure\Persistence\Doctrine\Repository;
 
+use App\Photo\Application\Criteria\PhotoCriteria;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\Photo;
 use App\Photo\Domain\Model\PhotoId;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
 use App\Photo\Infrastructure\Persistence\Doctrine\Entity\PhotoEntity;
 use App\Photo\Infrastructure\Persistence\Doctrine\Mapper\PhotoMapper;
-use App\Photo\UserInterface\Http\Request\PhotoQueryParams;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 
@@ -51,7 +51,7 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
      */
     public function findByFolderId(
         FolderId $folderId,
-        PhotoQueryParams $queryParams,
+        PhotoCriteria $criteria,
         int $limit,
         int $offset
     ): array {
@@ -67,10 +67,10 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
         ;
 
         // Apply filters
-        $this->applyFilters($qb, $queryParams);
+        $this->applyFilters($qb, $criteria);
 
         // Apply sorting
-        $this->applySorting($qb, $queryParams);
+        $this->applySorting($qb, $criteria);
 
         $entities = $qb
             ->setMaxResults($safeLimit)
@@ -85,7 +85,7 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
         );
     }
 
-    public function countByFolderId(FolderId $folderId, PhotoQueryParams $queryParams): int
+    public function countByFolderId(FolderId $folderId, PhotoCriteria $criteria): int
     {
         $qb = $this->entityManager->createQueryBuilder()
             ->select('COUNT(p.id)')
@@ -95,7 +95,7 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
         ;
 
         // Apply same filters for accurate count
-        $this->applyFilters($qb, $queryParams);
+        $this->applyFilters($qb, $criteria);
 
         return (int) $qb->getQuery()->getSingleScalarResult();
     }
@@ -113,26 +113,26 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
     /**
      * Apply filtering criteria to query builder.
      */
-    private function applyFilters(QueryBuilder $qb, PhotoQueryParams $queryParams): void
+    private function applyFilters(QueryBuilder $qb, PhotoCriteria $criteria): void
     {
         // Search by filename (case-insensitive substring)
-        if ($queryParams->search !== null) {
+        if ($criteria->search !== null) {
             $qb->andWhere('LOWER(p.fileName) LIKE LOWER(:search)')
-                ->setParameter('search', '%'.$queryParams->search.'%')
+                ->setParameter('search', '%'.$criteria->search.'%')
             ;
         }
 
         // Filter by MIME types
-        if ($queryParams->mimeTypes !== []) {
+        if ($criteria->mimeTypes !== []) {
             $qb->andWhere('p.mimeType IN (:mimeTypes)')
-                ->setParameter('mimeTypes', $queryParams->mimeTypes)
+                ->setParameter('mimeTypes', $criteria->mimeTypes)
             ;
         }
 
         // Filter by file extensions
-        if ($queryParams->extensions !== []) {
+        if ($criteria->extensions !== []) {
             $extensionConditions = [];
-            foreach ($queryParams->extensions as $index => $extension) {
+            foreach ($criteria->extensions as $index => $extension) {
                 $paramName = 'ext_'.$index;
                 $extensionConditions[] = "p.fileName LIKE :{$paramName}";
                 $qb->setParameter($paramName, '%.'.$extension);
@@ -141,14 +141,14 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
         }
 
         // Filter by size range
-        if ($queryParams->sizeMin !== null) {
+        if ($criteria->sizeMin !== null) {
             $qb->andWhere('p.sizeInBytes >= :sizeMin')
-                ->setParameter('sizeMin', $queryParams->sizeMin)
+                ->setParameter('sizeMin', $criteria->sizeMin)
             ;
         }
-        if ($queryParams->sizeMax !== null) {
+        if ($criteria->sizeMax !== null) {
             $qb->andWhere('p.sizeInBytes <= :sizeMax')
-                ->setParameter('sizeMax', $queryParams->sizeMax)
+                ->setParameter('sizeMax', $criteria->sizeMax)
             ;
         }
 
@@ -156,14 +156,14 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
         // This provides consistent date filtering: use EXIF capture date if available,
         // otherwise fall back to upload date. Ensures all photos can be filtered by date
         // regardless of whether EXIF metadata is present.
-        if ($queryParams->dateFrom !== null) {
+        if ($criteria->dateFrom !== null) {
             $qb->andWhere('COALESCE(p.takenAt, p.uploadedAt) >= :dateFrom')
-                ->setParameter('dateFrom', $queryParams->dateFrom)
+                ->setParameter('dateFrom', $criteria->dateFrom)
             ;
         }
-        if ($queryParams->dateTo !== null) {
+        if ($criteria->dateTo !== null) {
             $qb->andWhere('COALESCE(p.takenAt, p.uploadedAt) <= :dateTo')
-                ->setParameter('dateTo', $queryParams->dateTo)
+                ->setParameter('dateTo', $criteria->dateTo)
             ;
         }
     }
@@ -180,11 +180,11 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
      * Without secondary sorting, photos with identical primary sort values (e.g., same uploadedAt)
      * would be returned in non-deterministic order, causing duplicates across page boundaries.
      */
-    private function applySorting(QueryBuilder $qb, PhotoQueryParams $queryParams): void
+    private function applySorting(QueryBuilder $qb, PhotoCriteria $criteria): void
     {
-        $sortOrder = strtoupper($queryParams->sortOrder);
+        $sortOrder = strtoupper($criteria->sortOrder);
 
-        match ($queryParams->sortBy) {
+        match ($criteria->sortBy) {
             'uploadedAt' => $qb->orderBy('p.uploadedAt', $sortOrder)->addOrderBy('p.id', $sortOrder),
             // COALESCE ensures photos without EXIF date use uploadedAt for consistent sorting
             'takenAt' => $qb->orderBy('COALESCE(p.takenAt, p.uploadedAt)', $sortOrder)->addOrderBy('p.id', $sortOrder),
