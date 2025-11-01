@@ -111,8 +111,10 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
-      - name: Create database schema
-        run: php bin/console doctrine:schema:create --env=test
+      - name: Reset test database
+        run: |
+          rm -f var/test.db
+          php bin/console doctrine:schema:create --env=test
         env:
           APP_ENV: test
 
