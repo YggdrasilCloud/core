@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Photo\Domain\Repository;
 
+use App\Photo\Application\Criteria\FolderCriteria;
 use App\Photo\Domain\Model\Folder;
 use App\Photo\Domain\Model\FolderId;
-use App\Photo\UserInterface\Http\Request\FolderQueryParams;
 
 interface FolderRepositoryInterface
 {
@@ -21,22 +21,22 @@ interface FolderRepositoryInterface
      *
      * @return list<Folder>
      */
-    public function findAll(FolderQueryParams $queryParams, int $limit, int $offset): array;
+    public function findAll(FolderCriteria $criteria, int $limit, int $offset): array;
 
     /**
      * Count all folders with optional filtering.
      */
-    public function count(FolderQueryParams $queryParams): int;
+    public function count(FolderCriteria $criteria): int;
 
     /**
      * Find folders by parent ID with optional sorting and filtering.
      *
      * @return list<Folder>
      */
-    public function findByParentId(FolderId $parentId, FolderQueryParams $queryParams, int $limit, int $offset): array;
+    public function findByParentId(FolderId $parentId, FolderCriteria $criteria, int $limit, int $offset): array;
 
     /**
      * Count folders by parent ID with optional filtering.
      */
-    public function countByParentId(FolderId $parentId, FolderQueryParams $queryParams): int;
+    public function countByParentId(FolderId $parentId, FolderCriteria $criteria): int;
 }

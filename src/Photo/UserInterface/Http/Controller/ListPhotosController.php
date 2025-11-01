@@ -10,6 +10,7 @@ use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\UserInterface\Http\Request\PaginationParams;
 use App\Photo\UserInterface\Http\Request\PhotoQueryParams;
 use App\Shared\UserInterface\Http\Responder\JsonResponder;
+use DateTimeInterface;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -40,7 +41,7 @@ final readonly class ListPhotosController
                 $folderId,
                 $pagination->page,
                 $pagination->perPage,
-                $queryParams,
+                $queryParams->toCriteria(),
             ));
 
             $result = $envelope->last(HandledStamp::class)?->getResult();
@@ -53,16 +54,16 @@ final readonly class ListPhotosController
                     'total' => $result->total,
                 ],
                 'filters' => [
-                    'sortBy' => $result->queryParams->sortBy,
-                    'sortOrder' => $result->queryParams->sortOrder,
-                    'search' => $result->queryParams->search,
-                    'mimeTypes' => $result->queryParams->mimeTypes,
-                    'extensions' => $result->queryParams->extensions,
-                    'sizeMin' => $result->queryParams->sizeMin,
-                    'sizeMax' => $result->queryParams->sizeMax,
-                    'dateFrom' => $result->queryParams->dateFrom?->format(\DateTimeInterface::ATOM),
-                    'dateTo' => $result->queryParams->dateTo?->format(\DateTimeInterface::ATOM),
-                    'appliedFilters' => $result->queryParams->countAppliedFilters(),
+                    'sortBy' => $result->criteria->sortBy,
+                    'sortOrder' => $result->criteria->sortOrder,
+                    'search' => $result->criteria->search,
+                    'mimeTypes' => $result->criteria->mimeTypes,
+                    'extensions' => $result->criteria->extensions,
+                    'sizeMin' => $result->criteria->sizeMin,
+                    'sizeMax' => $result->criteria->sizeMax,
+                    'dateFrom' => $result->criteria->dateFrom?->format(DateTimeInterface::ATOM),
+                    'dateTo' => $result->criteria->dateTo?->format(DateTimeInterface::ATOM),
+                    'appliedFilters' => $result->criteria->countAppliedFilters(),
                 ],
             ]);
         } catch (InvalidArgumentException $e) {

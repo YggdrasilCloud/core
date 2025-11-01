@@ -9,6 +9,7 @@ use App\Photo\Application\Query\GetFolderChildren\GetFolderChildrenResult;
 use App\Photo\UserInterface\Http\Request\FolderQueryParams;
 use App\Photo\UserInterface\Http\Request\PaginationParams;
 use App\Shared\UserInterface\Http\Responder\JsonResponder;
+use DateTimeInterface;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -33,7 +34,7 @@ final readonly class GetFolderChildrenController
                 $id,
                 $pagination->page,
                 $pagination->perPage,
-                $queryParams,
+                $queryParams->toCriteria(),
             ));
 
             /** @var HandledStamp $stamp */
@@ -57,12 +58,12 @@ final readonly class GetFolderChildrenController
                     'total' => $result->total,
                 ],
                 'filters' => [
-                    'sortBy' => $result->queryParams->sortBy,
-                    'sortOrder' => $result->queryParams->sortOrder,
-                    'search' => $result->queryParams->search,
-                    'dateFrom' => $result->queryParams->dateFrom?->format(\DateTimeInterface::ATOM),
-                    'dateTo' => $result->queryParams->dateTo?->format(\DateTimeInterface::ATOM),
-                    'appliedFilters' => $result->queryParams->countAppliedFilters(),
+                    'sortBy' => $result->criteria->sortBy,
+                    'sortOrder' => $result->criteria->sortOrder,
+                    'search' => $result->criteria->search,
+                    'dateFrom' => $result->criteria->dateFrom?->format(DateTimeInterface::ATOM),
+                    'dateTo' => $result->criteria->dateTo?->format(DateTimeInterface::ATOM),
+                    'appliedFilters' => $result->criteria->countAppliedFilters(),
                 ],
             ]);
         } catch (InvalidArgumentException $e) {

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Photo\Application\Query\GetFolderChildren;
 
+use App\Photo\Application\Criteria\FolderCriteria;
 use App\Photo\Application\Query\ListFolders\FolderDto;
-use App\Photo\UserInterface\Http\Request\FolderQueryParams;
 
 final readonly class GetFolderChildrenResult
 {
@@ -17,6 +17,6 @@ final readonly class GetFolderChildrenResult
         public int $page,
         public int $perPage,
         public int $total,
-        public FolderQueryParams $queryParams,
+        public FolderCriteria $criteria,
     ) {}
 }
