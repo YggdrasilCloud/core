@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\Application\Query\ListPhotosInFolder;
 
-use App\Photo\Application\Criteria\PhotoCriteria;
+use App\Photo\Domain\Criteria\PhotoCriteria;
 
 final readonly class ListPhotosInFolderResult
 {

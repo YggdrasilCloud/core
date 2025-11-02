@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\UserInterface\Http\Request;
 
-use App\Photo\Application\Criteria\PhotoCriteria;
+use App\Photo\Domain\Criteria\PhotoCriteria;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Request;

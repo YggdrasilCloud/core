@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\Application\Query\GetFolderChildren;
 
-use App\Photo\Application\Criteria\FolderCriteria;
+use App\Photo\Domain\Criteria\FolderCriteria;
 use InvalidArgumentException;
 
 final readonly class GetFolderChildrenQuery
