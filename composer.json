@@ -111,6 +111,7 @@
         }
     },
     "require-dev": {
+        "dama/doctrine-test-bundle": "^8.4",
         "friendsofphp/php-cs-fixer": "^3.89.1",
         "infection/infection": "^0.31.9",
         "php-parallel-lint/php-parallel-lint": "^1.4",
