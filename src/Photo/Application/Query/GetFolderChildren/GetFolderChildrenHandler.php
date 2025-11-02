@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Photo\Application\Query\GetFolderChildren;
 
-use App\Photo\Application\Criteria\FolderCriteria;
 use App\Photo\Application\Query\ListFolders\FolderDto;
+use App\Photo\Domain\Criteria\FolderCriteria;
 use App\Photo\Domain\Exception\FolderNotFoundException;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;

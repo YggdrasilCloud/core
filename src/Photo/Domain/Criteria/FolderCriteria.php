@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Photo\Application\Criteria;
+namespace App\Photo\Domain\Criteria;
 
 use DateTimeImmutable;
 use InvalidArgumentException;

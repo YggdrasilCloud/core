@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\Application\Query\ListFolders;
 
-use App\Photo\Application\Criteria\FolderCriteria;
+use App\Photo\Domain\Criteria\FolderCriteria;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use DateTimeInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;

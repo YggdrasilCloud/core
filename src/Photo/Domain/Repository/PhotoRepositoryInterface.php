@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\Domain\Repository;
 
-use App\Photo\Application\Criteria\PhotoCriteria;
+use App\Photo\Domain\Criteria\PhotoCriteria;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\Photo;
 use App\Photo\Domain\Model\PhotoId;

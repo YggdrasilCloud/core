@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\UserInterface\Http\Request;
 
-use App\Photo\Application\Criteria\FolderCriteria;
+use App\Photo\Domain\Criteria\FolderCriteria;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Request;

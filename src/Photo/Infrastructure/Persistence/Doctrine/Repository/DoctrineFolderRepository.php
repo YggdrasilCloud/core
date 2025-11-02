@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\Infrastructure\Persistence\Doctrine\Repository;
 
-use App\Photo\Application\Criteria\FolderCriteria;
+use App\Photo\Domain\Criteria\FolderCriteria;
 use App\Photo\Domain\Model\Folder;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
