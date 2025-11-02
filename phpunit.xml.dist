@@ -43,6 +43,10 @@
         </exclude>
     </source>
 
+    <extensions>
+        <bootstrap class="DAMA\DoctrineTestBundle\PHPUnit\PHPUnitExtension"/>
+    </extensions>
+
     <!-- Coverage disabled temporarily - uncomment and install XDEBUG to enable
     <coverage includeUncoveredFiles="true"
               pathCoverage="false"
