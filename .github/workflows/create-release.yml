@@ -21,6 +21,22 @@ on:
 jobs:
   quality-checks:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: yggdrasilcloud_test
+          POSTGRES_USER: yggdrasilcloud_test
+          POSTGRES_PASSWORD: yggdrasilcloud_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U yggdrasilcloud_test -d yggdrasilcloud_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout core
         uses: actions/checkout@v4
@@ -29,7 +45,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, json, pcntl, posix
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_pgsql, dom, filter, gd, json, pcntl, posix
           coverage: xdebug
           tools: composer:v2
 
@@ -47,8 +63,8 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
-      - name: Create database schema
-        run: php bin/console doctrine:schema:create --env=test
+      - name: Reset test database
+        run: php bin/console doctrine:migrations:migrate --no-interaction --env=test
         env:
           APP_ENV: test
 
