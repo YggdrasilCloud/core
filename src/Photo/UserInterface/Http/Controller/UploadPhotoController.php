@@ -13,6 +13,7 @@ use DomainException;
 use Exception;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\Exception\HandlerFailedException;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -72,6 +73,19 @@ final readonly class UploadPhotoController
                 'mimeType' => $mimeType,
                 'size' => $uploadRequest->file->getSize(),
             ], sprintf('/api/folders/%s/photos', $folderId));
+        } catch (HandlerFailedException $e) {
+            // Unwrap the original exception thrown by the handler
+            $originalException = $e->getPrevious() ?? $e;
+
+            if ($originalException instanceof DomainException) {
+                return $this->responder->notFound($originalException->getMessage());
+            }
+
+            if ($originalException instanceof InvalidArgumentException) {
+                return $this->responder->badRequest($originalException->getMessage());
+            }
+
+            return $this->responder->serverError('Failed to upload photo');
         } catch (DomainException $e) {
             return $this->responder->notFound($e->getMessage());
         } catch (InvalidArgumentException $e) {
