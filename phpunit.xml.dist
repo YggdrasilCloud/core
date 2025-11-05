@@ -20,7 +20,7 @@
         <server name="SHELL_VERBOSITY" value="-1"/>
         <server name="SYMFONY_PHPUNIT_REMOVE" value=""/>
         <server name="SYMFONY_PHPUNIT_VERSION" value="10"/>
-        <env name="DATABASE_URL" value="postgresql://yggdrasilcloud_test:yggdrasilcloud_test@127.0.0.1:5433/yggdrasilcloud_test?serverVersion=16&amp;charset=utf8"/>
+        <env name="DATABASE_URL" value="postgresql://yggdrasilcloud_test:yggdrasilcloud_test@127.0.0.1:5433/yggdrasilcloud?serverVersion=16&amp;charset=utf8"/>
         <env name="STORAGE_DSN" value="storage://local?root=var/storage"/>
         <env name="CORS_ALLOW_ORIGIN" value="^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$"/>
         <env name="PHOTO_MAX_FILE_SIZE" value="20971520"/>
