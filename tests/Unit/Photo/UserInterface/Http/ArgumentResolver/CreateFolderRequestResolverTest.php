@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Photo\UserInterface\Http\ArgumentResolver;
 use App\Photo\UserInterface\Http\ArgumentResolver\CreateFolderRequestResolver;
 use App\Photo\UserInterface\Http\Request\CreateFolderRequest;
 use InvalidArgumentException;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
@@ -54,7 +55,9 @@ final class CreateFolderRequestResolverTest extends TestCase
         $argument = $this->createMock(ArgumentMetadata::class);
         $argument->method('getType')->willReturn(CreateFolderRequest::class);
 
-        $this->validator
+        $validatorMock = $this->validator;
+        assert($validatorMock instanceof MockObject);
+        $validatorMock
             ->method('validate')
             ->willReturn(new ConstraintViolationList())
         ;
@@ -81,7 +84,9 @@ final class CreateFolderRequestResolverTest extends TestCase
         $argument = $this->createMock(ArgumentMetadata::class);
         $argument->method('getType')->willReturn(CreateFolderRequest::class);
 
-        $this->validator
+        $validatorMock = $this->validator;
+        assert($validatorMock instanceof MockObject);
+        $validatorMock
             ->method('validate')
             ->willReturn(new ConstraintViolationList())
         ;
@@ -130,7 +135,9 @@ final class CreateFolderRequestResolverTest extends TestCase
         $argument = $this->createMock(ArgumentMetadata::class);
         $argument->method('getType')->willReturn(CreateFolderRequest::class);
 
-        $this->validator
+        $validatorMock = $this->validator;
+        assert($validatorMock instanceof MockObject);
+        $validatorMock
             ->method('validate')
             ->willReturn(new ConstraintViolationList())
         ;
