@@ -217,7 +217,7 @@ final class ListFoldersControllerTest extends WebTestCase
         $folderRepo->save($folderA);
         $folderRepo->save($folderB);
 
-        $client->request('GET', '/api/folders?sortBy=name&sortOrder=asc&perPage=3');
+        $client->request('GET', '/api/folders?sortBy=name&sortOrder=asc&perPage=100');
 
         self::assertResponseIsSuccessful();
 
@@ -265,7 +265,7 @@ final class ListFoldersControllerTest extends WebTestCase
         $folderRepo->save($folderB);
         $folderRepo->save($folderC);
 
-        $client->request('GET', '/api/folders?sortBy=name&sortOrder=desc&perPage=3');
+        $client->request('GET', '/api/folders?sortBy=name&sortOrder=desc&perPage=100');
 
         self::assertResponseIsSuccessful();
 
