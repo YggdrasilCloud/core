@@ -18,7 +18,6 @@ use App\Photo\Domain\Repository\PhotoRepositoryInterface;
 use App\Photo\Domain\Service\ThumbnailGenerator;
 use DateTimeImmutable;
 use DomainException;
-use Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -30,7 +29,7 @@ use Psr\Log\LoggerInterface;
  */
 final class UploadPhotoToFolderHandlerTest extends TestCase
 {
-    private PhotoRepositoryInterface&MockObject $photoRepository;
+    private MockObject&PhotoRepositoryInterface $photoRepository;
     private FolderRepositoryInterface&MockObject $folderRepository;
     private FileStorageInterface&MockObject $fileStorage;
     private ThumbnailGenerator $thumbnailGenerator;
@@ -69,7 +68,8 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
         $this->folderRepository
             ->expects(self::once())
             ->method('findById')
-            ->willReturn(null);
+            ->willReturn(null)
+        ;
 
         $this->expectException(DomainException::class);
         $this->expectExceptionMessage('Folder not found');
@@ -95,7 +95,8 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
         $this->folderRepository
             ->expects(self::once())
             ->method('findById')
-            ->willReturn($folder);
+            ->willReturn($folder)
+        ;
 
         $storedObject = new StoredObject(
             key: $sourceKey,
@@ -112,18 +113,20 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
                 $command->mimeType,
                 $command->sizeInBytes
             )
-            ->willReturn($storedObject);
+            ->willReturn($storedObject)
+        ;
 
         $this->photoRepository
             ->expects(self::once())
             ->method('save')
-            ->with(self::callback(function (Photo $photo) use ($command): bool {
+            ->with(self::callback(static function (Photo $photo) use ($command): bool {
                 return $photo->folderId()->toString() === $command->folderId
                     && $photo->fileName()->toString() === $command->fileName
                     && $photo->mimeType() === $command->mimeType
                     && $photo->sizeInBytes() === $command->sizeInBytes
                     && $photo->thumbnailKey() !== null; // Thumbnail should be generated
-            }));
+            }))
+        ;
 
         ($this->handler)($command);
     }
@@ -136,7 +139,8 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
         $this->folderRepository
             ->expects(self::once())
             ->method('findById')
-            ->willReturn($folder);
+            ->willReturn($folder)
+        ;
 
         $sourceKey = sprintf('photos/%s/%s', $command->folderId, $command->photoId);
 
@@ -150,15 +154,17 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
         $this->fileStorage
             ->expects(self::once())
             ->method('save')
-            ->willReturn($storedObject);
+            ->willReturn($storedObject)
+        ;
 
         $this->photoRepository
             ->expects(self::once())
             ->method('save')
-            ->with(self::callback(function (Photo $photo): bool {
+            ->with(self::callback(static function (Photo $photo): bool {
                 // Photo should be saved without thumbnail
                 return $photo->thumbnailKey() === null;
-            }));
+            }))
+        ;
 
         ($this->handler)($command);
     }
@@ -171,7 +177,8 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
         $this->folderRepository
             ->expects(self::once())
             ->method('findById')
-            ->willReturn($folder);
+            ->willReturn($folder)
+        ;
 
         $expectedStorageKey = sprintf('photos/%s/%s', $command->folderId, $command->photoId);
 
@@ -188,11 +195,13 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
                 key: $expectedStorageKey,
                 adapter: 'local',
                 storedAt: new DateTimeImmutable()
-            ));
+            ))
+        ;
 
         $this->photoRepository
             ->expects(self::once())
-            ->method('save');
+            ->method('save')
+        ;
 
         ($this->handler)($command);
     }
