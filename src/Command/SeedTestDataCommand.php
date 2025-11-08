@@ -79,18 +79,28 @@ final class SeedTestDataCommand extends Command
             "Photos: {$photosUploaded} uploaded",
             '',
             'Folder structure:',
-            '  - Vacation Photos 2024',
-            '    └─ Summer',
-            '       ├─ Beach',
-            '       └─ Mountains',
-            '    └─ Winter',
-            '  - Family Memories',
-            '    ├─ Birthdays',
-            '    └─ Holidays',
-            '  - Work Projects',
-            '  - Empty Folder',
+            '  - Infinite Scroll Test (60 photos) ← For E2E scroll tests',
+            '  - Vacation Photos 2024 (5 photos)',
+            '    └─ Summer (5 photos)',
+            '       ├─ Beach (5 photos)',
+            '       └─ Mountains (0 photos)',
+            '    └─ Winter (0 photos)',
+            '  - Family Memories (5 photos)',
+            '    ├─ Birthdays (5 photos)',
+            '    └─ Holidays (0 photos)',
+            '  - Work Projects (5 photos)',
+            '  - Empty Folder (0 photos)',
+            '  - Deep Hierarchy Test (0 photos)',
+            '    └─ Level 2 Folder (0 photos)',
+            '       └─ Level 3 Folder (0 photos)',
+            '          └─ Level 4 Folder (5 photos)',
             '',
-            'You can now run E2E tests.',
+            'Total photos: ~90',
+            'E2E test coverage: ✓ Infinite scroll (60+ photos in one folder)',
+            '                   ✓ Nested navigation (3+ levels deep)',
+            '                   ✓ Empty folders, regular folders',
+            '',
+            'You can now run E2E tests with full coverage.',
         ]);
 
         return Command::SUCCESS;
@@ -173,6 +183,28 @@ final class SeedTestDataCommand extends Command
         $folders['empty'] = $empty;
         ++$rootCount;
 
+        // Infinite Scroll Test Folder (root only, will have 60+ photos for E2E scroll tests)
+        $scrollTest = $this->createFolder('Infinite Scroll Test');
+        $folders['scroll_test'] = $scrollTest;
+        ++$rootCount;
+
+        // Deep Hierarchy Test (3+ levels for tree expansion tests)
+        $deepRoot = $this->createFolder('Deep Hierarchy Test');
+        $folders['deep_root'] = $deepRoot;
+        ++$rootCount;
+
+        $deepLevel2 = $this->createFolder('Level 2 Folder', $deepRoot);
+        $folders['deep_level2'] = $deepLevel2;
+        ++$nestedCount;
+
+        $deepLevel3 = $this->createFolder('Level 3 Folder', $deepLevel2);
+        $folders['deep_level3'] = $deepLevel3;
+        ++$nestedCount;
+
+        $deepLevel4 = $this->createFolder('Level 4 Folder', $deepLevel3);
+        $folders['deep_level4'] = $deepLevel4;
+        ++$nestedCount;
+
         return [
             'folders' => $folders,
             'root' => $rootCount,
@@ -188,24 +220,36 @@ final class SeedTestDataCommand extends Command
     {
         $totalPhotosUploaded = 0;
 
-        // Upload photos to multiple folders (not the empty one)
-        $foldersToPopulate = [
-            $folders['vacation'],  // Vacation Photos 2024
-            $folders['beach'],     // Beach (nested)
-            $folders['family'],    // Family Memories
-            $folders['birthdays'], // Birthdays (nested)
-            $folders['work'],      // Work Projects
+        // Upload 5 photos to regular folders (not the empty one)
+        $regularFolders = [
+            $folders['vacation'],    // Vacation Photos 2024
+            $folders['beach'],       // Beach (nested)
+            $folders['family'],      // Family Memories
+            $folders['birthdays'],   // Birthdays (nested)
+            $folders['work'],        // Work Projects
+            $folders['deep_level4'], // Deep hierarchy leaf node
         ];
 
-        foreach ($foldersToPopulate as $folderId) {
-            $count = $this->uploadTestPhotos($folderId);
+        foreach ($regularFolders as $folderId) {
+            $count = $this->uploadTestPhotos($folderId, 1);
             $totalPhotosUploaded += $count;
         }
+
+        // Upload 60+ photos to scroll test folder for E2E infinite scroll tests
+        // Upload each image 12 times (5 images × 12 = 60 photos)
+        $scrollCount = $this->uploadTestPhotos($folders['scroll_test'], 12);
+        $totalPhotosUploaded += $scrollCount;
 
         return $totalPhotosUploaded;
     }
 
-    private function uploadTestPhotos(string $folderId): int
+    /**
+     * Upload test photos to a folder.
+     *
+     * @param string $folderId    The folder ID to upload photos to
+     * @param int    $repeatCount How many times to upload each image (for creating large test datasets)
+     */
+    private function uploadTestPhotos(string $folderId, int $repeatCount = 1): int
     {
         $fixturesDir = self::FIXTURES_DIR;
 
@@ -221,36 +265,44 @@ final class SeedTestDataCommand extends Command
         $photos = glob("{$fixturesDir}/*.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG}", GLOB_BRACE) ?: [];
         $photosUploaded = 0;
 
-        foreach ($photos as $photoPath) {
-            $fileName = basename($photoPath);
+        // Repeat the upload process $repeatCount times
+        for ($iteration = 0; $iteration < $repeatCount; ++$iteration) {
+            foreach ($photos as $photoPath) {
+                $fileName = basename($photoPath);
 
-            // Skip README files
-            if (str_contains(strtolower($fileName), 'readme')) {
-                continue;
+                // Skip README files
+                if (str_contains(strtolower($fileName), 'readme')) {
+                    continue;
+                }
+
+                $fileStream = fopen($photoPath, 'r');
+                if ($fileStream === false) {
+                    continue;
+                }
+
+                $mimeType = mime_content_type($photoPath) ?: 'application/octet-stream';
+                $sizeInBytes = filesize($photoPath) ?: 0;
+
+                // Add iteration suffix to filename for uniqueness when repeating
+                $uniqueFileName = $repeatCount > 1
+                    ? pathinfo($fileName, PATHINFO_FILENAME).'_'.($iteration + 1).'.'.pathinfo($fileName, PATHINFO_EXTENSION)
+                    : $fileName;
+
+                $command = new UploadPhotoToFolderCommand(
+                    photoId: Uuid::v7()->toString(),
+                    folderId: $folderId,
+                    ownerId: self::DEFAULT_OWNER_ID,
+                    fileName: $uniqueFileName,
+                    fileStream: $fileStream,
+                    mimeType: $mimeType,
+                    sizeInBytes: $sizeInBytes,
+                );
+
+                $this->messageBus->dispatch($command);
+
+                fclose($fileStream);
+                ++$photosUploaded;
             }
-
-            $fileStream = fopen($photoPath, 'r');
-            if ($fileStream === false) {
-                continue;
-            }
-
-            $mimeType = mime_content_type($photoPath) ?: 'application/octet-stream';
-            $sizeInBytes = filesize($photoPath) ?: 0;
-
-            $command = new UploadPhotoToFolderCommand(
-                photoId: Uuid::v7()->toString(),
-                folderId: $folderId,
-                ownerId: self::DEFAULT_OWNER_ID,
-                fileName: $fileName,
-                fileStream: $fileStream,
-                mimeType: $mimeType,
-                sizeInBytes: $sizeInBytes,
-            );
-
-            $this->messageBus->dispatch($command);
-
-            fclose($fileStream);
-            ++$photosUploaded;
         }
 
         return $photosUploaded;
