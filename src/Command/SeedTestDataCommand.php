@@ -48,7 +48,8 @@ final class SeedTestDataCommand extends Command
 
         if ($_ENV['APP_ENV'] === 'dev') {
             $io->warning('You are seeding in DEV environment! This will purge the development database.');
-            if (!$io->confirm('Do you want to continue?', false)) {
+            // Only ask for confirmation if running interactively
+            if ($input->isInteractive() && !$io->confirm('Do you want to continue?', false)) {
                 return Command::FAILURE;
             }
         }
