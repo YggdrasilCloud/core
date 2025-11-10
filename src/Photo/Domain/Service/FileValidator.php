@@ -4,22 +4,23 @@ declare(strict_types=1);
 
 namespace App\Photo\Domain\Service;
 
+use App\Photo\Domain\Model\MimeTypeCollection;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
-use function count;
-use function in_array;
 use function sprintf;
 
 final readonly class FileValidator
 {
-    private readonly array $cleanedMimeTypes;
+    private readonly MimeTypeCollection $allowedMimeTypes;
 
+    /**
+     * @param list<string> $allowedMimeTypes
+     */
     public function __construct(
         private int $maxFileSize,
         array $allowedMimeTypes,
     ) {
-        // Filter out empty strings from CSV parsing
-        $this->cleanedMimeTypes = array_values(array_filter($allowedMimeTypes, static fn ($type) => $type !== ''));
+        $this->allowedMimeTypes = MimeTypeCollection::fromStrings($allowedMimeTypes);
     }
 
     public function validate(UploadedFile $file): ?string
@@ -31,13 +32,13 @@ final readonly class FileValidator
             return sprintf('File size exceeds maximum allowed size of %s MB', $maxSizeMB);
         }
 
-        // Check MIME type (skip if empty array = no restriction)
-        if (count($this->cleanedMimeTypes) > 0) {
+        // Check MIME type (skip if empty collection = no restriction)
+        if (!$this->allowedMimeTypes->isEmpty()) {
             $mimeType = $file->getMimeType();
-            if ($mimeType === null || !in_array($mimeType, $this->cleanedMimeTypes, true)) {
+            if ($mimeType === null || !$this->allowedMimeTypes->contains($mimeType)) {
                 return sprintf(
                     'File type not allowed. Allowed types: %s',
-                    implode(', ', $this->cleanedMimeTypes)
+                    $this->allowedMimeTypes->toCommaSeparatedString()
                 );
             }
         }
