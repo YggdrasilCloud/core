@@ -75,6 +75,7 @@ final readonly class DoctrineFolderRepository implements FolderRepositoryInterfa
         // Apply sorting
         $this->applySorting($qb, $criteria);
 
+        /** @var list<FolderEntity> $entities */
         $entities = $qb
             ->setMaxResults($safeLimit)
             ->setFirstResult($safeOffset)
@@ -82,10 +83,10 @@ final readonly class DoctrineFolderRepository implements FolderRepositoryInterfa
             ->getResult()
         ;
 
-        return array_values(array_map(
+        return array_map(
             static fn (FolderEntity $entity) => FolderMapper::toDomain($entity),
             $entities
-        ));
+        );
     }
 
     public function count(FolderCriteria $criteria): int
@@ -126,6 +127,7 @@ final readonly class DoctrineFolderRepository implements FolderRepositoryInterfa
         // Apply sorting
         $this->applySorting($qb, $criteria);
 
+        /** @var list<FolderEntity> $entities */
         $entities = $qb
             ->setMaxResults($safeLimit)
             ->setFirstResult($safeOffset)
@@ -133,10 +135,10 @@ final readonly class DoctrineFolderRepository implements FolderRepositoryInterfa
             ->getResult()
         ;
 
-        return array_values(array_map(
+        return array_map(
             static fn (FolderEntity $entity) => FolderMapper::toDomain($entity),
             $entities
-        ));
+        );
     }
 
     public function countByParentId(FolderId $parentId, FolderCriteria $criteria): int
