@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Photo\UserInterface\Http\Controller;
 
 use App\Photo\Application\Query\GetPhotoFile\FileNotFoundException;
+use App\Photo\Application\Query\GetPhotoFile\FileResponseModel;
 use App\Photo\Application\Query\GetPhotoFile\GetPhotoFileQuery;
 use App\Photo\Application\Query\GetPhotoFile\PhotoNotFoundException;
 use App\Photo\UserInterface\Http\Responder\FileResponder;
@@ -28,6 +29,8 @@ final readonly class GetPhotoFileController
     {
         try {
             $envelope = $this->queryBus->dispatch(new GetPhotoFileQuery($photoId));
+
+            /** @var FileResponseModel $model */
             $model = $envelope->last(HandledStamp::class)?->getResult();
 
             return $this->responder->respond($model, $request);

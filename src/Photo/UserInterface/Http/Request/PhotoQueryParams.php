@@ -215,7 +215,7 @@ final readonly class PhotoQueryParams
         }
 
         if (is_array($value)) {
-            return array_values(array_filter(array_map('strval', $value)));
+            return array_values(array_filter(array_map(static fn (mixed $v): string => (string) $v, $value)));
         }
 
         if (is_string($value)) {

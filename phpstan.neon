@@ -5,13 +5,11 @@ parameters:
     level: 9
     paths:
         - src
-        - tests
 
     # Ignore deprecated warnings for now
     reportUnmatchedIgnoredErrors: false
 
     # Exclude patterns
     excludePaths:
-        - tests/bootstrap.php
         - var/*
         - scripts/*
