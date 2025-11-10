@@ -31,7 +31,7 @@ final readonly class UploadPhotoRequest
 
         $ownerId = $request->request->get('ownerId');
 
-        if ($ownerId === null || $ownerId === '') {
+        if (!is_string($ownerId) || $ownerId === '') {
             throw new InvalidArgumentException('Missing required field: ownerId');
         }
 
