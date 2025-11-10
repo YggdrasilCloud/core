@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Photo\UserInterface\Http\Controller;
 
 use App\Photo\Application\Query\ListFolders\ListFoldersQuery;
+use App\Photo\Application\Query\ListFolders\ListFoldersResult;
 use App\Photo\UserInterface\Http\Request\FolderQueryParams;
 use App\Photo\UserInterface\Http\Request\PaginationParams;
 use App\Shared\UserInterface\Http\Responder\JsonResponder;
@@ -32,7 +33,7 @@ final readonly class ListFoldersController
             $queryParams->toCriteria(),
         ));
 
-        /** @var \App\Photo\Application\Query\ListFolders\ListFoldersResult $result */
+        /** @var ListFoldersResult $result */
         $result = $envelope->last(HandledStamp::class)?->getResult();
 
         $data = array_map(
