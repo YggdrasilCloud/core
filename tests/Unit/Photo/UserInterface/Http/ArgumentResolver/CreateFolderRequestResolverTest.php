@@ -16,8 +16,6 @@ use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class CreateFolderRequestResolverTest extends TestCase

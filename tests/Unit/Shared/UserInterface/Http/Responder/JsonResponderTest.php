@@ -10,8 +10,6 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class JsonResponderTest extends TestCase

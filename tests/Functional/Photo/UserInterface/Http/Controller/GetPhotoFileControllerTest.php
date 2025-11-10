@@ -18,8 +18,6 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use function dirname;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class GetPhotoFileControllerTest extends WebTestCase

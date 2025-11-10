@@ -14,8 +14,6 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class LocalStorageTest extends TestCase

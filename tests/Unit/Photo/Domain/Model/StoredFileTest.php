@@ -10,8 +10,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class StoredFileTest extends TestCase
