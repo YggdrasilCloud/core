@@ -72,6 +72,7 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
         // Apply sorting
         $this->applySorting($qb, $criteria);
 
+        /** @var list<PhotoEntity> $entities */
         $entities = $qb
             ->setMaxResults($safeLimit)
             ->setFirstResult($safeOffset)

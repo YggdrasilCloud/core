@@ -44,6 +44,7 @@ final readonly class ListPhotosController
                 $queryParams->toCriteria(),
             ));
 
+            /** @var \App\Photo\Application\Query\ListPhotosInFolder\ListPhotosInFolderResult $result */
             $result = $envelope->last(HandledStamp::class)?->getResult();
 
             return $this->responder->success([

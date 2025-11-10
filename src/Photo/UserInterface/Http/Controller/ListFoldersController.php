@@ -31,6 +31,8 @@ final readonly class ListFoldersController
             $pagination->perPage,
             $queryParams->toCriteria(),
         ));
+
+        /** @var \App\Photo\Application\Query\ListFolders\ListFoldersResult $result */
         $result = $envelope->last(HandledStamp::class)?->getResult();
 
         $data = array_map(
