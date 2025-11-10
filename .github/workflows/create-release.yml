@@ -154,46 +154,8 @@ jobs:
           echo "Timeout waiting for E2E workflow to start"
           exit 1
 
-  create-release:
-    needs: [trigger-e2e, resolve-frontend-version]
-    runs-on: ubuntu-latest
-    if: ${{ !inputs.dry_run }}
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout core
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GH_PAT }}
-
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Create and push tag
-        run: |
-          git tag ${{ inputs.version }}
-          git push origin ${{ inputs.version }}
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          token: ${{ secrets.GH_PAT }}
-          tag_name: ${{ inputs.version }}
-          generate_release_notes: true
-          body: |
-            ## Release ${{ inputs.version }}
-
-            **Tested with:**
-            - Core: `main` (${{ github.sha }})
-            - Frontend: `${{ needs.resolve-frontend-version.outputs.frontend_version }}`
-
-            Full E2E test report: [Workflow run](https://github.com/YggdrasilCloud/tests-e2e/actions)
-
   merge-pr:
-    needs: [create-release]
+    needs: [trigger-e2e, resolve-frontend-version]
     runs-on: ubuntu-latest
     if: ${{ !inputs.dry_run }}
     permissions:
@@ -236,8 +198,47 @@ jobs:
 
           echo "✅ PR #$PR_NUMBER merged successfully"
 
-  post-tag-verification:
+  create-release:
     needs: [merge-pr, resolve-frontend-version]
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.dry_run }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main branch after merge
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push tag
+        run: |
+          git tag ${{ inputs.version }}
+          git push origin ${{ inputs.version }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GH_PAT }}
+          tag_name: ${{ inputs.version }}
+          generate_release_notes: true
+          body: |
+            ## Release ${{ inputs.version }}
+
+            **Tested with:**
+            - Core: `main` (merged commit)
+            - Frontend: `${{ needs.resolve-frontend-version.outputs.frontend_version }}`
+
+            Full E2E test report: [Workflow run](https://github.com/YggdrasilCloud/tests-e2e/actions)
+
+  post-tag-verification:
+    needs: [create-release, resolve-frontend-version]
     runs-on: ubuntu-latest
     if: ${{ !inputs.dry_run }}
     steps:
