@@ -9,9 +9,6 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-/**
- * @coversNothing
- */
 final class ThumbnailGeneratorTest extends TestCase
 {
     private string $tempDir;

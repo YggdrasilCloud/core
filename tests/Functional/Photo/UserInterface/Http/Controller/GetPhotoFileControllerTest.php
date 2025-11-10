@@ -17,9 +17,6 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 use function dirname;
 
-/**
- * @coversNothing
- */
 final class GetPhotoFileControllerTest extends WebTestCase
 {
     private string $testStoragePath;

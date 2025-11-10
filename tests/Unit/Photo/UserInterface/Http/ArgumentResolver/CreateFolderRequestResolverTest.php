@@ -15,9 +15,6 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-/**
- * @coversNothing
- */
 final class CreateFolderRequestResolverTest extends TestCase
 {
     private SerializerInterface $serializer;

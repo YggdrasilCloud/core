@@ -10,9 +10,6 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
 
-/**
- * @coversNothing
- */
 final class PaginationParamsResolverTest extends TestCase
 {
     private PaginationParamsResolver $resolver;

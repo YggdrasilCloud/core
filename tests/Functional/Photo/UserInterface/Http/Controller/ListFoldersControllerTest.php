@@ -12,9 +12,6 @@ use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Tests\Functional\JsonResponseTestTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-/**
- * @coversNothing
- */
 final class ListFoldersControllerTest extends WebTestCase
 {
     use JsonResponseTestTrait;

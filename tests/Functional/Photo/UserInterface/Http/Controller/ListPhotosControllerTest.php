@@ -17,9 +17,6 @@ use App\Tests\Functional\JsonResponseTestTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * @coversNothing
- */
 final class ListPhotosControllerTest extends WebTestCase
 {
     use JsonResponseTestTrait;

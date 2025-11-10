@@ -13,9 +13,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
-/**
- * @coversNothing
- */
 final class LocalStorageTest extends TestCase
 {
     private string $tempDir;

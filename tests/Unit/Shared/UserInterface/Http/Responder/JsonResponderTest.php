@@ -9,9 +9,6 @@ use App\Tests\Functional\JsonResponseTestTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * @coversNothing
- */
 final class JsonResponderTest extends TestCase
 {
     use JsonResponseTestTrait;

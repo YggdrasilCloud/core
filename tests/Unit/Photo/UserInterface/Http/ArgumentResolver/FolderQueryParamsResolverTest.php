@@ -12,9 +12,6 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
 
-/**
- * @coversNothing
- */
 final class FolderQueryParamsResolverTest extends TestCase
 {
     private FolderQueryParamsResolver $resolver;

@@ -16,9 +16,6 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
 
-/**
- * @coversNothing
- */
 final class ExceptionSubscriberTest extends TestCase
 {
     public function testHandlesFolderNotFoundExceptionDirectly(): void

@@ -10,9 +10,6 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
-/**
- * @coversNothing
- */
 final class PhotoQueryParamsTest extends TestCase
 {
     public function testDefaultValues(): void

@@ -12,9 +12,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
-/**
- * @covers \App\Photo\UserInterface\Http\Responder\FileResponder
- */
 final class FileResponderTest extends TestCase
 {
     public function testRespondReturnsStreamedResponse(): void

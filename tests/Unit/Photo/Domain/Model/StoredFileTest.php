@@ -9,9 +9,6 @@ use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @coversNothing
- */
 final class StoredFileTest extends TestCase
 {
     public function testCreateAcceptsValidParameters(): void
