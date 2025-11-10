@@ -15,9 +15,6 @@ use LogicException;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @coversNothing
- */
 final class StorageFactoryTest extends TestCase
 {
     private StorageDsnParser $parser;

@@ -9,9 +9,6 @@ use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @coversNothing
- */
 final class StorageConfigTest extends TestCase
 {
     #[Test]

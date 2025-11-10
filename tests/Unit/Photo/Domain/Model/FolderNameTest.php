@@ -10,9 +10,6 @@ use PHPUnit\Framework\TestCase;
 
 use function strlen;
 
-/**
- * @coversNothing
- */
 final class FolderNameTest extends TestCase
 {
     public function testFromStringAcceptsValidName(): void

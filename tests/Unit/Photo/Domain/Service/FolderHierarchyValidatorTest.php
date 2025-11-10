@@ -13,9 +13,6 @@ use App\Photo\Domain\Service\FolderHierarchyValidator;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @coversNothing
- */
 final class FolderHierarchyValidatorTest extends TestCase
 {
     public function testValidateParentAcceptsNullParent(): void

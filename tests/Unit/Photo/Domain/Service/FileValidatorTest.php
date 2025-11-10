@@ -10,9 +10,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 use function strlen;
 
-/**
- * @coversNothing
- */
 final class FileValidatorTest extends TestCase
 {
     public function testValidateAcceptsValidFile(): void

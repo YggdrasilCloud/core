@@ -13,9 +13,6 @@ use App\Photo\Domain\Model\UserId;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @coversNothing
- */
 final class PhotoTest extends TestCase
 {
     public function testUploadCreatesPhotoWithCorrectData(): void

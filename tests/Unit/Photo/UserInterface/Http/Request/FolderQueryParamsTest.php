@@ -10,9 +10,6 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
-/**
- * @coversNothing
- */
 final class FolderQueryParamsTest extends TestCase
 {
     public function testDefaultValues(): void

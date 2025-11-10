@@ -12,9 +12,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
 
-/**
- * @coversNothing
- */
 final class UploadPhotoRequestResolverTest extends TestCase
 {
     private UploadPhotoRequestResolver $resolver;

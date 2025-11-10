@@ -13,9 +13,6 @@ use App\Tests\Functional\JsonResponseTestTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * @coversNothing
- */
 final class GetFolderPathControllerTest extends WebTestCase
 {
     use JsonResponseTestTrait;

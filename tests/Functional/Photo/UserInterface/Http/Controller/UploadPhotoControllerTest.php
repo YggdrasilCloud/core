@@ -14,9 +14,6 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * @coversNothing
- */
 final class UploadPhotoControllerTest extends WebTestCase
 {
     use JsonResponseTestTrait;

@@ -22,9 +22,6 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-/**
- * @coversNothing
- */
 final class UploadPhotoToFolderHandlerTest extends TestCase
 {
     private MockObject&PhotoRepositoryInterface $photoRepository;
