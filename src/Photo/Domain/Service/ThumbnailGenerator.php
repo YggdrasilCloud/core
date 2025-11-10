@@ -187,8 +187,8 @@ final readonly class ThumbnailGenerator
 
         // Calculate new dimensions maintaining aspect ratio
         $ratio = min($maxWidth / $width, $maxHeight / $height);
-        $newWidth = (int) ($width * $ratio);
-        $newHeight = (int) ($height * $ratio);
+        $newWidth = max(1, (int) ($width * $ratio));
+        $newHeight = max(1, (int) ($height * $ratio));
 
         // Create thumbnail
         $thumbnail = imagecreatetruecolor($newWidth, $newHeight);
@@ -200,7 +200,10 @@ final readonly class ThumbnailGenerator
 
         // Preserve transparency for PNG and GIF
         if ($type === IMAGETYPE_PNG || $type === IMAGETYPE_GIF) {
-            imagecolortransparent($thumbnail, imagecolorallocatealpha($thumbnail, 0, 0, 0, 127));
+            $transparentColor = imagecolorallocatealpha($thumbnail, 0, 0, 0, 127);
+            if ($transparentColor !== false) {
+                imagecolortransparent($thumbnail, $transparentColor);
+            }
             imagealphablending($thumbnail, false);
             imagesavealpha($thumbnail, true);
         }
