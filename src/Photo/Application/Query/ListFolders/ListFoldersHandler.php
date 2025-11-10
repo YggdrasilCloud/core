@@ -24,14 +24,16 @@ final readonly class ListFoldersHandler
         $folders = $this->folderRepository->findAll($criteria, $query->perPage, $offset);
         $total = $this->folderRepository->count($criteria);
 
-        $items = array_map(
-            static fn ($folder) => new FolderDto(
-                id: $folder->id()->toString(),
-                name: $folder->name()->toString(),
-                createdAt: $folder->createdAt()->format(DateTimeInterface::ATOM),
-                parentId: $folder->parentId()?->toString(),
-            ),
-            $folders
+        $items = FolderDtoCollection::fromArray(
+            array_map(
+                static fn ($folder) => new FolderDto(
+                    id: $folder->id()->toString(),
+                    name: $folder->name()->toString(),
+                    createdAt: $folder->createdAt()->format(DateTimeInterface::ATOM),
+                    parentId: $folder->parentId()?->toString(),
+                ),
+                $folders
+            )
         );
 
         return new ListFoldersResult(

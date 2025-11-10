@@ -47,7 +47,7 @@ final readonly class ListPhotosController
             $result = $envelope->last(HandledStamp::class)?->getResult();
 
             return $this->responder->success([
-                'data' => $result->photos,
+                'data' => $result->photos->toArray(),
                 'pagination' => [
                     'page' => $result->page,
                     'perPage' => $result->perPage,

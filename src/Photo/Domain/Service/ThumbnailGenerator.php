@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\Domain\Service;
 
+use App\Photo\Domain\Model\PathInfo;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -107,8 +108,8 @@ final readonly class ThumbnailGenerator
         }
 
         // Generate thumbnail path
-        $pathInfo = pathinfo($sourceFilePath);
-        $relativePath = $pathInfo['dirname'] === '.' ? '' : $pathInfo['dirname'];
+        $pathInfo = PathInfo::fromPath($sourceFilePath);
+        $relativePath = $pathInfo->getDirnameOrEmpty();
         $thumbnailDir = $this->storagePath.'/thumbs/'.$relativePath;
 
         // Create thumbnail directory if it doesn't exist
@@ -117,7 +118,7 @@ final readonly class ThumbnailGenerator
         }
 
         // vipsthumbnail outputs as filename.jpg by default, we want filename_thumb.jpg
-        $thumbnailFileName = $pathInfo['filename'].'_thumb.jpg';
+        $thumbnailFileName = $pathInfo->getFilename().'_thumb.jpg';
         $thumbnailPath = $thumbnailDir.'/'.$thumbnailFileName;
 
         // Build vipsthumbnail command
@@ -209,8 +210,8 @@ final readonly class ThumbnailGenerator
 
         // Generate thumbnail path (same structure as original but in thumbs/ subdirectory)
         // Use the original relative path to determine directory structure
-        $pathInfo = pathinfo($sourceFilePath);
-        $relativePath = $pathInfo['dirname'] === '.' ? '' : $pathInfo['dirname'];
+        $pathInfo = PathInfo::fromPath($sourceFilePath);
+        $relativePath = $pathInfo->getDirnameOrEmpty();
         $thumbnailDir = $this->storagePath.'/thumbs/'.$relativePath;
 
         // Create thumbnail directory if it doesn't exist
@@ -221,7 +222,7 @@ final readonly class ThumbnailGenerator
             throw new RuntimeException('Failed to create thumbnail directory');
         }
 
-        $thumbnailFileName = $pathInfo['filename'].'_thumb.'.$pathInfo['extension'];
+        $thumbnailFileName = $pathInfo->buildFilenameWithSuffix('_thumb');
         $thumbnailPath = $thumbnailDir.'/'.$thumbnailFileName;
 
         // Save thumbnail

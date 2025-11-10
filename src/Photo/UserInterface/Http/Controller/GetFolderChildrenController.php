@@ -50,7 +50,7 @@ final readonly class GetFolderChildrenController
                         'name' => $child->name,
                         'createdAt' => $child->createdAt,
                     ],
-                    $result->children
+                    $result->children->toArray()
                 ),
                 'pagination' => [
                     'page' => $result->page,
