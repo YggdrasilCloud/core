@@ -10,8 +10,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class ThumbnailGeneratorTest extends TestCase

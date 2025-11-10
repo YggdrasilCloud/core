@@ -17,8 +17,6 @@ use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class ExceptionSubscriberTest extends TestCase

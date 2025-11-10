@@ -12,8 +12,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class PhotoQueryParamsResolverTest extends TestCase

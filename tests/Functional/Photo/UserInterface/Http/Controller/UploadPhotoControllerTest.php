@@ -15,8 +15,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class UploadPhotoControllerTest extends WebTestCase

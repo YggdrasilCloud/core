@@ -23,8 +23,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class UploadPhotoToFolderHandlerTest extends TestCase

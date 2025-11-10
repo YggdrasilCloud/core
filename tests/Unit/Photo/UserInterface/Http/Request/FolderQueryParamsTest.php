@@ -11,8 +11,6 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class FolderQueryParamsTest extends TestCase

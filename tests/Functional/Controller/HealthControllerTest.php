@@ -9,8 +9,6 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class HealthControllerTest extends WebTestCase

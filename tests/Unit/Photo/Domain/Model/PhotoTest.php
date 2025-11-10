@@ -14,8 +14,6 @@ use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class PhotoTest extends TestCase

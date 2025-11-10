@@ -10,8 +10,6 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class StorageConfigTest extends TestCase

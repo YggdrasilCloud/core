@@ -13,8 +13,6 @@ use App\Tests\Functional\JsonResponseTestTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class ListFoldersControllerTest extends WebTestCase

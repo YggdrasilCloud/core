@@ -11,8 +11,6 @@ use PHPUnit\Framework\TestCase;
 use function strlen;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class FolderNameTest extends TestCase

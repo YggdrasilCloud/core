@@ -10,8 +10,6 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class PhotoIdTest extends TestCase

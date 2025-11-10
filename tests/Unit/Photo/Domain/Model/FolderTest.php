@@ -13,8 +13,6 @@ use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @internal
- *
  * @coversNothing
  */
 final class FolderTest extends TestCase

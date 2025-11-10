@@ -16,6 +16,7 @@ return (new PhpCsFixer\Config())
             'import_constants' => true,
             'import_functions' => true,
         ],
+        'php_unit_internal_class' => false, // Disable @internal annotation in tests
     ])
     ->setRiskyAllowed(true)
     ->setFinder($finder)
