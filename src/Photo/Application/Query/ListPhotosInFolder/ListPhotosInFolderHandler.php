@@ -35,21 +35,23 @@ final readonly class ListPhotosInFolderHandler
 
         $total = $this->photoRepository->countByFolderId($folderId, $criteria);
 
-        $photoDtos = array_map(
-            static fn ($photo) => new PhotoDto(
-                $photo->id()->toString(),
-                $photo->fileName()->toString(),
-                $photo->storageKey(),
-                $photo->mimeType(),
-                $photo->sizeInBytes(),
-                $photo->uploadedAt()->format(DateTimeInterface::ATOM),
-                $photo->takenAt()?->format(DateTimeInterface::ATOM),
-                '/api/photos/'.$photo->id()->toString().'/file',
-                $photo->thumbnailKey() !== null
-                    ? '/api/photos/'.$photo->id()->toString().'/thumbnail'
-                    : null,
-            ),
-            $photos,
+        $photoDtos = PhotoDtoCollection::fromArray(
+            array_map(
+                static fn ($photo) => new PhotoDto(
+                    $photo->id()->toString(),
+                    $photo->fileName()->toString(),
+                    $photo->storageKey(),
+                    $photo->mimeType(),
+                    $photo->sizeInBytes(),
+                    $photo->uploadedAt()->format(DateTimeInterface::ATOM),
+                    $photo->takenAt()?->format(DateTimeInterface::ATOM),
+                    '/api/photos/'.$photo->id()->toString().'/file',
+                    $photo->thumbnailKey() !== null
+                        ? '/api/photos/'.$photo->id()->toString().'/thumbnail'
+                        : null,
+                ),
+                $photos,
+            )
         );
 
         return new ListPhotosInFolderResult(

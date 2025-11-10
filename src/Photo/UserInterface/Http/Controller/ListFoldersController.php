@@ -40,7 +40,7 @@ final readonly class ListFoldersController
                 'createdAt' => $folder->createdAt,
                 'parentId' => $folder->parentId,
             ],
-            $result->items
+            $result->items->toArray()
         );
 
         return $this->responder->success([

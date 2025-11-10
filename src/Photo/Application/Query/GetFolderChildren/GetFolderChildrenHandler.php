@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Photo\Application\Query\GetFolderChildren;
 
 use App\Photo\Application\Query\ListFolders\FolderDto;
+use App\Photo\Application\Query\ListFolders\FolderDtoCollection;
 use App\Photo\Domain\Criteria\FolderCriteria;
 use App\Photo\Domain\Exception\FolderNotFoundException;
 use App\Photo\Domain\Model\FolderId;
@@ -42,13 +43,15 @@ final readonly class GetFolderChildrenHandler
 
         $total = $this->folderRepository->countByParentId($parentId, $criteria);
 
-        $children = array_map(
-            static fn ($folder) => new FolderDto(
-                id: $folder->id()->toString(),
-                name: $folder->name()->toString(),
-                createdAt: $folder->createdAt()->format(DateTimeInterface::ATOM),
-            ),
-            $folders
+        $children = FolderDtoCollection::fromArray(
+            array_map(
+                static fn ($folder) => new FolderDto(
+                    id: $folder->id()->toString(),
+                    name: $folder->name()->toString(),
+                    createdAt: $folder->createdAt()->format(DateTimeInterface::ATOM),
+                ),
+                $folders
+            )
         );
 
         return new GetFolderChildrenResult(

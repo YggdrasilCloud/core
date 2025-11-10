@@ -8,11 +8,8 @@ use App\Photo\Domain\Criteria\PhotoCriteria;
 
 final readonly class ListPhotosInFolderResult
 {
-    /**
-     * @param list<PhotoDto> $photos
-     */
     public function __construct(
-        public array $photos,
+        public PhotoDtoCollection $photos,
         public int $page,
         public int $perPage,
         public int $total,
