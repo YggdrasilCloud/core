@@ -70,6 +70,7 @@ final readonly class FileNameSanitizer
 
         // Remove control characters (ASCII 0-31 and 127)
         $sanitized = preg_replace('/[\x00-\x1F\x7F]/', '', $sanitized);
+        assert($sanitized !== null);
 
         // Trim again after replacements
         $sanitized = trim($sanitized);
