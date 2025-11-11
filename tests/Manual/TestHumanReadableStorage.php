@@ -125,7 +125,7 @@ final class TestHumanReadableStorage extends KernelTestCase
         $image = imagecreatetruecolor(100, 100);
         imagefilledrectangle($image, 0, 0, 100, 100, imagecolorallocate($image, 255, 0, 0));
 
-        $stream = fopen('php://memory', 'r+b');
+        $stream = fopen('php://memory', 'r+');
         imagejpeg($image, $stream);
         imagedestroy($image);
 
@@ -150,11 +150,11 @@ final class TestHumanReadableStorage extends KernelTestCase
 
             $fullPath = $path.'/'.$item;
             if (is_dir($fullPath)) {
-                echo $indent."📁 $item/\n";
+                echo $indent."📁 {$item}/\n";
                 $this->printDirectoryTree($fullPath, $indent.'  ');
             } else {
                 $size = filesize($fullPath);
-                echo $indent."📄 $item (".number_format($size)." bytes)\n";
+                echo $indent."📄 {$item} (".number_format($size)." bytes)\n";
             }
         }
     }

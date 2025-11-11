@@ -26,7 +26,8 @@ final class FileCollisionResolverTest extends TestCase
             ->expects(self::once())
             ->method('exists')
             ->with('photos/Vacances/plage.jpg')
-            ->willReturn(false);
+            ->willReturn(false)
+        ;
 
         $result = $this->resolver->resolveUniquePath('photos/Vacances/plage.jpg');
 
@@ -44,7 +45,8 @@ final class FileCollisionResolverTest extends TestCase
                     'photos/Vacances/plage (1).jpg' => false, // First suffix available
                     default => false,
                 };
-            });
+            })
+        ;
 
         $result = $this->resolver->resolveUniquePath('photos/Vacances/plage.jpg');
 
@@ -63,7 +65,8 @@ final class FileCollisionResolverTest extends TestCase
                     'photos/Vacances/plage (3).jpg' => false, // This one is available
                     default => false,
                 };
-            });
+            })
+        ;
 
         $result = $this->resolver->resolveUniquePath('photos/Vacances/plage.jpg');
 
@@ -81,7 +84,8 @@ final class FileCollisionResolverTest extends TestCase
                     'photos/Documents/README (1)' => false,
                     default => false,
                 };
-            });
+            })
+        ;
 
         $result = $this->resolver->resolveUniquePath('photos/Documents/README');
 
@@ -99,7 +103,8 @@ final class FileCollisionResolverTest extends TestCase
                     'photos/Archives/backup.tar (1).gz' => false,
                     default => false,
                 };
-            });
+            })
+        ;
 
         $result = $this->resolver->resolveUniquePath('photos/Archives/backup.tar.gz');
 
@@ -117,7 +122,8 @@ final class FileCollisionResolverTest extends TestCase
                     'photo (1).jpg' => false,
                     default => false,
                 };
-            });
+            })
+        ;
 
         $result = $this->resolver->resolveUniquePath('photo.jpg');
 
@@ -135,7 +141,8 @@ final class FileCollisionResolverTest extends TestCase
                     'photos/2024/Vacances/Été/beach (1).jpg' => false,
                     default => false,
                 };
-            });
+            })
+        ;
 
         $result = $this->resolver->resolveUniquePath('photos/2024/Vacances/Été/beach.jpg');
 
@@ -153,7 +160,8 @@ final class FileCollisionResolverTest extends TestCase
                     'photos/Été/plage-🏖️ (1).jpg' => false,
                     default => false,
                 };
-            });
+            })
+        ;
 
         $result = $this->resolver->resolveUniquePath('photos/Été/plage-🏖️.jpg');
 
@@ -165,7 +173,8 @@ final class FileCollisionResolverTest extends TestCase
         // Mock storage to always return true (file always exists)
         $this->storage
             ->method('exists')
-            ->willReturn(true);
+            ->willReturn(true)
+        ;
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Unable to find unique filename after 1000 attempts for: photos/Vacances/plage.jpg');
@@ -185,7 +194,8 @@ final class FileCollisionResolverTest extends TestCase
                     'photos/Version (1) (1).jpg' => false,
                     default => false,
                 };
-            });
+            })
+        ;
 
         $result = $this->resolver->resolveUniquePath('photos/Version (1).jpg');
 

@@ -43,7 +43,7 @@ final class FileNameSanitizerTest extends TestCase
 
     public function testSanitizeReplacesBackslash(): void
     {
-        $result = $this->sanitizer->sanitize('folder\\file.jpg');
+        $result = $this->sanitizer->sanitize('folder\file.jpg');
 
         self::assertSame('folder_file.jpg', $result);
     }

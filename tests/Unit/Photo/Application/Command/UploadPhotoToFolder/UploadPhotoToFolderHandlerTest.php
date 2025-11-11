@@ -30,8 +30,8 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
     private FolderRepositoryInterface&MockObject $folderRepository;
     private FileStorageInterface&MockObject $fileStorage;
     private ThumbnailGenerator $thumbnailGenerator;
-    private MockObject&FileSystemPathBuilder $pathBuilder;
-    private MockObject&FileCollisionResolver $collisionResolver;
+    private FileSystemPathBuilder&MockObject $pathBuilder;
+    private FileCollisionResolver&MockObject $collisionResolver;
     private UploadPhotoToFolderHandler $handler;
     private string $tempDir;
 
