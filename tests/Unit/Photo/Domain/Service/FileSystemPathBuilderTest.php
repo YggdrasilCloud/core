@@ -62,7 +62,8 @@ final class FileSystemPathBuilderTest extends TestCase
             ->expects(self::once())
             ->method('findById')
             ->with($parentId)
-            ->willReturn($parent);
+            ->willReturn($parent)
+        ;
 
         $path = $this->pathBuilder->buildFolderPath($child);
 
@@ -107,7 +108,8 @@ final class FileSystemPathBuilderTest extends TestCase
                 }
 
                 return null;
-            });
+            })
+        ;
 
         $path = $this->pathBuilder->buildFolderPath($child);
 
@@ -143,7 +145,8 @@ final class FileSystemPathBuilderTest extends TestCase
             ->expects(self::once())
             ->method('findById')
             ->with($parentId)
-            ->willReturn(null); // Parent not found
+            ->willReturn(null) // Parent not found
+        ;
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Parent folder not found: 6ba7b813-9dad-11d1-80b4-00c04fd430c8');
@@ -168,7 +171,8 @@ final class FileSystemPathBuilderTest extends TestCase
         // This simulates infinite recursion
         $this->folderRepository
             ->method('findById')
-            ->willReturn($folder);
+            ->willReturn($folder)
+        ;
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Maximum folder depth exceeded - possible circular reference');
@@ -211,7 +215,8 @@ final class FileSystemPathBuilderTest extends TestCase
             ->expects(self::once())
             ->method('findById')
             ->with($parentId)
-            ->willReturn($parent);
+            ->willReturn($parent)
+        ;
 
         $path = $this->pathBuilder->buildFilePath($child, 'beach.jpg');
 
