@@ -6,6 +6,7 @@ namespace App\Photo\Domain\Model;
 
 use InvalidArgumentException;
 
+use function sprintf;
 use function strlen;
 use function trim;
 
@@ -14,10 +15,12 @@ use function trim;
  */
 final readonly class MimeType
 {
+    private string $value;
+
     private function __construct(
-        private string $value,
+        string $value,
     ) {
-        $trimmed = trim($this->value);
+        $trimmed = trim($value);
 
         if ($trimmed === '') {
             throw new InvalidArgumentException('MIME type cannot be empty');
@@ -31,6 +34,8 @@ final readonly class MimeType
         if (strlen($trimmed) > 255) {
             throw new InvalidArgumentException('MIME type too long');
         }
+
+        $this->value = $trimmed;
     }
 
     public static function fromString(string $value): self
