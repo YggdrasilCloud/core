@@ -22,7 +22,7 @@ use function implode;
  * - Root folder "Vacances" → "photos/Vacances"
  * - Subfolder "Été 2024" (parent: "Vacances") → "photos/Vacances/Été 2024"
  */
-final readonly class FileSystemPathBuilder
+readonly class FileSystemPathBuilder
 {
     private const BASE_PATH = 'photos';
 

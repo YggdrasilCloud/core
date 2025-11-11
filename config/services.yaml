@@ -67,3 +67,8 @@ services:
         factory: ['@App\File\Infrastructure\Storage\StorageFactory', 'create']
         arguments:
             $dsn: '%env(STORAGE_DSN)%'
+
+    # File Bounded Context - Physical folder storage
+    App\File\Domain\Service\PhysicalFolderStorage:
+        arguments:
+            $basePath: '%kernel.project_dir%/var/storage'

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Photo\Application\Command\UploadPhotoToFolder;
 
 use App\File\Domain\Port\FileStorageInterface;
+use App\File\Domain\Service\FileCollisionResolver;
 use App\Photo\Domain\Model\FileName;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\Photo;
@@ -12,6 +13,7 @@ use App\Photo\Domain\Model\PhotoId;
 use App\Photo\Domain\Model\UserId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
+use App\Photo\Domain\Service\FileSystemPathBuilder;
 use App\Photo\Domain\Service\ThumbnailGenerator;
 use DomainException;
 use Exception;
@@ -27,6 +29,8 @@ final readonly class UploadPhotoToFolderHandler
         private FolderRepositoryInterface $folderRepository,
         private FileStorageInterface $fileStorage,
         private ThumbnailGenerator $thumbnailGenerator,
+        private FileSystemPathBuilder $pathBuilder,
+        private FileCollisionResolver $collisionResolver,
     ) {}
 
     public function __invoke(UploadPhotoToFolderCommand $command): void
@@ -41,9 +45,10 @@ final readonly class UploadPhotoToFolderHandler
             throw new DomainException(sprintf('Folder not found: %s', $command->folderId));
         }
 
-        // Store the file with the new FileStorageInterface
+        // Build human-readable storage path based on folder hierarchy
         $photoId = PhotoId::fromString($command->photoId);
-        $storageKey = sprintf('photos/%s/%s', $folderId->toString(), $photoId->toString());
+        $proposedPath = $this->pathBuilder->buildFilePath($folder, $command->fileName);
+        $storageKey = $this->collisionResolver->resolveUniquePath($proposedPath);
 
         $storedObject = $this->fileStorage->save(
             $command->fileStream,

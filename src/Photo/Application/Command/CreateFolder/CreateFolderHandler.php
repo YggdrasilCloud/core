@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Photo\Application\Command\CreateFolder;
 
+use App\File\Domain\Service\PhysicalFolderStorage;
 use App\Photo\Domain\Model\Folder;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\FolderName;
 use App\Photo\Domain\Model\UserId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
+use App\Photo\Domain\Service\FileSystemPathBuilder;
 use InvalidArgumentException;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -17,6 +19,8 @@ final readonly class CreateFolderHandler
 {
     public function __construct(
         private FolderRepositoryInterface $folderRepository,
+        private PhysicalFolderStorage $folderStorage,
+        private FileSystemPathBuilder $pathBuilder,
     ) {}
 
     public function __invoke(CreateFolderCommand $command): void
@@ -39,6 +43,11 @@ final readonly class CreateFolderHandler
             $parentId,
         );
 
+        // Save folder entity to database first
         $this->folderRepository->save($folder);
+
+        // Create physical directory on filesystem
+        $folderPath = $this->pathBuilder->buildFolderPath($folder);
+        $this->folderStorage->createDirectory($folderPath);
     }
 }
