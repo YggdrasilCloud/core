@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Photo\Application\Command\UploadPhotoToFolder;
 
 use App\File\Domain\Model\StoredObject;
 use App\File\Domain\Port\FileStorageInterface;
+use App\File\Domain\Service\FileCollisionResolver;
 use App\Photo\Application\Command\UploadPhotoToFolder\UploadPhotoToFolderCommand;
 use App\Photo\Application\Command\UploadPhotoToFolder\UploadPhotoToFolderHandler;
 use App\Photo\Domain\Model\Folder;
@@ -15,6 +16,7 @@ use App\Photo\Domain\Model\Photo;
 use App\Photo\Domain\Model\UserId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
+use App\Photo\Domain\Service\FileSystemPathBuilder;
 use App\Photo\Domain\Service\ThumbnailGenerator;
 use DateTimeImmutable;
 use DomainException;
@@ -28,6 +30,8 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
     private FolderRepositoryInterface&MockObject $folderRepository;
     private FileStorageInterface&MockObject $fileStorage;
     private ThumbnailGenerator $thumbnailGenerator;
+    private MockObject&FileSystemPathBuilder $pathBuilder;
+    private MockObject&FileCollisionResolver $collisionResolver;
     private UploadPhotoToFolderHandler $handler;
     private string $tempDir;
 
@@ -36,6 +40,8 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
         $this->photoRepository = $this->createMock(PhotoRepositoryInterface::class);
         $this->folderRepository = $this->createMock(FolderRepositoryInterface::class);
         $this->fileStorage = $this->createMock(FileStorageInterface::class);
+        $this->pathBuilder = $this->createMock(FileSystemPathBuilder::class);
+        $this->collisionResolver = $this->createMock(FileCollisionResolver::class);
 
         $this->tempDir = sys_get_temp_dir().'/upload_handler_test_'.uniqid();
         mkdir($this->tempDir, 0755, true);
@@ -47,7 +53,9 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
             $this->photoRepository,
             $this->folderRepository,
             $this->fileStorage,
-            $this->thumbnailGenerator
+            $this->thumbnailGenerator,
+            $this->pathBuilder,
+            $this->collisionResolver,
         );
     }
 
@@ -78,7 +86,7 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
         $folder = $this->createFolder($command->folderId);
 
         // Create a real source image for thumbnail generation
-        $sourceKey = sprintf('photos/%s/%s', $command->folderId, $command->photoId);
+        $sourceKey = 'photos/Test Folder/test-photo.jpg';
         $sourcePath = $this->tempDir.'/'.$sourceKey;
         mkdir(dirname($sourcePath), 0755, true);
 
@@ -91,6 +99,20 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
             ->expects(self::once())
             ->method('findById')
             ->willReturn($folder)
+        ;
+
+        $this->pathBuilder
+            ->expects(self::once())
+            ->method('buildFilePath')
+            ->with($folder, $command->fileName)
+            ->willReturn($sourceKey)
+        ;
+
+        $this->collisionResolver
+            ->expects(self::once())
+            ->method('resolveUniquePath')
+            ->with($sourceKey)
+            ->willReturn($sourceKey)
         ;
 
         $storedObject = new StoredObject(
@@ -137,7 +159,21 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
             ->willReturn($folder)
         ;
 
-        $sourceKey = sprintf('photos/%s/%s', $command->folderId, $command->photoId);
+        $sourceKey = 'photos/Test Folder/test-photo.jpg';
+
+        $this->pathBuilder
+            ->expects(self::once())
+            ->method('buildFilePath')
+            ->with($folder, $command->fileName)
+            ->willReturn($sourceKey)
+        ;
+
+        $this->collisionResolver
+            ->expects(self::once())
+            ->method('resolveUniquePath')
+            ->with($sourceKey)
+            ->willReturn($sourceKey)
+        ;
 
         // Don't create the source image file - this will cause thumbnail generation to fail
         $storedObject = new StoredObject(
@@ -175,7 +211,21 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
             ->willReturn($folder)
         ;
 
-        $expectedStorageKey = sprintf('photos/%s/%s', $command->folderId, $command->photoId);
+        $expectedStorageKey = 'photos/Test Folder/test-photo.jpg';
+
+        $this->pathBuilder
+            ->expects(self::once())
+            ->method('buildFilePath')
+            ->with($folder, $command->fileName)
+            ->willReturn($expectedStorageKey)
+        ;
+
+        $this->collisionResolver
+            ->expects(self::once())
+            ->method('resolveUniquePath')
+            ->with($expectedStorageKey)
+            ->willReturn($expectedStorageKey)
+        ;
 
         $this->fileStorage
             ->expects(self::once())

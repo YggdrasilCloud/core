@@ -16,7 +16,7 @@ use function sprintf;
  *
  * Uses Windows/macOS-style suffixes: filename.ext, filename (1).ext, filename (2).ext, etc.
  */
-final readonly class FileCollisionResolver
+readonly class FileCollisionResolver
 {
     /**
      * Maximum attempts to find a unique filename before giving up.
