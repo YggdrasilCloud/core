@@ -55,7 +55,7 @@ readonly class FileSystemPathBuilder
         $depth = 0;
 
         // Walk up the hierarchy, collecting folder names
-        while ($current !== null) {
+        while (true) {
             if ($depth >= self::MAX_DEPTH) {
                 throw new RuntimeException('Maximum folder depth exceeded - possible circular reference');
             }
