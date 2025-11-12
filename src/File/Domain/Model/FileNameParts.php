@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\File\Domain\Model;
 
-use function preg_match;
+use function mb_strlen;
+use function mb_strrpos;
+use function mb_substr;
 use function sprintf;
 
 /**
@@ -32,13 +34,24 @@ final readonly class FileNameParts
      */
     public static function fromFileName(string $fileName): self
     {
-        // Match the last dot and everything after it
-        if (preg_match('/^(.+)(\.[^.]+)$/', $fileName, $matches) === 1) {
-            return new self($matches[1], $matches[2]);
+        // Find the last dot position
+        $lastDotPos = mb_strrpos($fileName, '.');
+
+        // If no dot found, or dot is at the start (like ".gitignore"), no extension
+        if ($lastDotPos === false || $lastDotPos === 0) {
+            return new self($fileName, '');
         }
 
-        // No extension found
-        return new self($fileName, '');
+        // If dot is at the end (like "file."), no extension
+        if ($lastDotPos === mb_strlen($fileName) - 1) {
+            return new self($fileName, '');
+        }
+
+        // Split at the last dot
+        $baseName = mb_substr($fileName, 0, $lastDotPos);
+        $extension = mb_substr($fileName, $lastDotPos);
+
+        return new self($baseName, $extension);
     }
 
     /**
