@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace App\File\Domain\Service;
 
+use App\File\Domain\Model\FileNameParts;
 use App\File\Domain\Port\FileStorageInterface;
 use RuntimeException;
 
 use function dirname;
-use function preg_match;
-use function sprintf;
 
 /**
  * Resolves filename collisions by appending numeric suffixes.
@@ -49,14 +48,14 @@ readonly class FileCollisionResolver
             return $proposedKey;
         }
 
-        // Extract directory, base name, and extension
+        // Extract directory and parse filename parts
         $directory = dirname($proposedKey);
         $fileName = basename($proposedKey);
-        [$baseName, $extension] = $this->splitFileName($fileName);
+        $parts = FileNameParts::fromFileName($fileName);
 
         // Try incrementing suffixes until we find an available name
         for ($attempt = 1; $attempt <= self::MAX_ATTEMPTS; ++$attempt) {
-            $newFileName = sprintf('%s (%d)%s', $baseName, $attempt, $extension);
+            $newFileName = $parts->withSuffix($attempt)->toString();
             $newKey = $directory === '.' ? $newFileName : $directory.'/'.$newFileName;
 
             if (!$this->storage->exists($newKey)) {
@@ -69,27 +68,5 @@ readonly class FileCollisionResolver
             self::MAX_ATTEMPTS,
             $proposedKey,
         ));
-    }
-
-    /**
-     * Splits a filename into base name and extension.
-     *
-     * Examples:
-     * - "photo.jpg" → ["photo", ".jpg"]
-     * - "archive.tar.gz" → ["archive.tar", ".gz"]
-     * - "README" → ["README", ""]
-     * - "photo (1).jpg" → ["photo (1)", ".jpg"]
-     *
-     * @return array{string, string} [baseName, extension]
-     */
-    private function splitFileName(string $fileName): array
-    {
-        // Match the last dot and everything after it
-        if (preg_match('/^(.+)(\.[^.]+)$/', $fileName, $matches) === 1) {
-            return [$matches[1], $matches[2]];
-        }
-
-        // No extension found
-        return [$fileName, ''];
     }
 }
