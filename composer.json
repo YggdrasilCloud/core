@@ -9,6 +9,7 @@
         "php": "^8.4",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "ext-mbstring": "*",
         "azjezz/psl": "^4.2",
         "doctrine/dbal": "^3.10.3",
         "doctrine/doctrine-bundle": "^2.18",
