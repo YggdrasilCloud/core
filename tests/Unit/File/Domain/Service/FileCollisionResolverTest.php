@@ -212,6 +212,7 @@ final class FileCollisionResolverTest extends TestCase
             ->method('exists')
             ->willReturnCallback(static function () use (&$callCount) {
                 ++$callCount;
+
                 // Return false on the 1001st call (original + 1000 attempts)
                 return $callCount <= 1000;
             })
