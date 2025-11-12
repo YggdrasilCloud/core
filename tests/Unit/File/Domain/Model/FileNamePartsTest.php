@@ -159,10 +159,9 @@ final class FileNamePartsTest extends TestCase
         self::assertSame('.jpg', $parts->extension);
     }
 
-    public function testFromFileNameMatchesFullStringOnly(): void
+    public function testFromFileNameParsesCorrectly(): void
     {
-        // Test that regex properly matches to end of string ($)
-        // This ensures the entire filename is consumed
+        // Test that parsing correctly identifies base name and extension
         $parts = FileNameParts::fromFileName('document.pdf');
 
         // Verify the full reconstruction matches input exactly
