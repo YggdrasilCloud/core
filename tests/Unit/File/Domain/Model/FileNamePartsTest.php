@@ -158,4 +158,26 @@ final class FileNamePartsTest extends TestCase
         self::assertSame('photo', $parts->baseName);
         self::assertSame('.jpg', $parts->extension);
     }
+
+    public function testFromFileNameMatchesFullStringOnly(): void
+    {
+        // Test that regex properly matches to end of string ($)
+        // This ensures the entire filename is consumed
+        $parts = FileNameParts::fromFileName('document.pdf');
+
+        // Verify the full reconstruction matches input exactly
+        self::assertSame('document.pdf', $parts->toString());
+        self::assertSame('document', $parts->baseName);
+        self::assertSame('.pdf', $parts->extension);
+    }
+
+    public function testFromFileNameWithJustDot(): void
+    {
+        // Edge case: file ending with just a dot (no extension)
+        $parts = FileNameParts::fromFileName('file.');
+
+        self::assertSame('file.', $parts->baseName);
+        self::assertSame('', $parts->extension);
+        self::assertFalse($parts->hasExtension());
+    }
 }

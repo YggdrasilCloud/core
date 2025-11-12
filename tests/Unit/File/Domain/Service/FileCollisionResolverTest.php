@@ -201,4 +201,26 @@ final class FileCollisionResolverTest extends TestCase
 
         self::assertSame('photos/Version (1) (1).jpg', $result);
     }
+
+    public function testResolveUniquePathUsesExactlyMaxAttempts(): void
+    {
+        // Test that we attempt exactly MAX_ATTEMPTS (1000) times
+        // This ensures the <= vs < boundary is correctly tested
+        $callCount = 0;
+
+        $this->storage
+            ->method('exists')
+            ->willReturnCallback(static function () use (&$callCount) {
+                ++$callCount;
+                // Return false on the 1001st call (original + 1000 attempts)
+                return $callCount <= 1000;
+            })
+        ;
+
+        $result = $this->resolver->resolveUniquePath('photo.jpg');
+
+        // Should succeed with "photo (1000).jpg" at the 1000th attempt
+        self::assertSame('photo (1000).jpg', $result);
+        self::assertSame(1001, $callCount); // 1 original + 1000 attempts
+    }
 }
