@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\File\Domain\Service;
 
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 use function is_dir;
@@ -25,7 +26,12 @@ final readonly class PhysicalFolderStorage
 {
     public function __construct(
         private string $basePath,
-    ) {}
+        private LoggerInterface $logger,
+    ) {
+        $this->logger->debug('PhysicalFolderStorage initialized', [
+            'basePath' => $this->basePath,
+        ]);
+    }
 
     /**
      * Creates a directory at the given path.
