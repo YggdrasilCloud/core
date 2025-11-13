@@ -7,6 +7,7 @@ parameters:
     photo.max_file_size: '%env(int:PHOTO_MAX_FILE_SIZE)%'
     photo.allowed_mime_types: '%env(csv:PHOTO_ALLOWED_MIME_TYPES)%'
     photo.storage_path: '%kernel.project_dir%/var/storage/photos'
+    default_storage_path: '%kernel.project_dir%/var/storage'
 
 services:
     # default configuration for services in *this* file
@@ -71,4 +72,4 @@ services:
     # File Bounded Context - Physical folder storage
     App\File\Domain\Service\PhysicalFolderStorage:
         arguments:
-            $basePath: '%kernel.project_dir%/var/storage'
+            $basePath: '%env(default:default_storage_path:FILE_STORAGE_PATH)%'
