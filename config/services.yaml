@@ -48,7 +48,7 @@ services:
     # Photo Bounded Context - Thumbnail generator
     App\Photo\Domain\Service\ThumbnailGenerator:
         arguments:
-            $storagePath: '%photo.storage_path%'
+            $storagePath: '%kernel.project_dir%/var/storage'
 
     # Commands
     App\Command\SeedTestDataCommand:
