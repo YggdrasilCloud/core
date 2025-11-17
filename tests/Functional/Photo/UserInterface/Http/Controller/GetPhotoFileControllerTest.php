@@ -221,7 +221,12 @@ final class GetPhotoFileControllerTest extends WebTestCase
             return;
         }
 
-        $files = array_diff(scandir($path), ['.', '..']);
+        $scannedFiles = scandir($path);
+        if ($scannedFiles === false) {
+            return; // Cannot read directory, skip
+        }
+
+        $files = array_diff($scannedFiles, ['.', '..']);
         foreach ($files as $file) {
             $fullPath = $path.'/'.$file;
             is_dir($fullPath) ? $this->removeDirectory($fullPath) : unlink($fullPath);
