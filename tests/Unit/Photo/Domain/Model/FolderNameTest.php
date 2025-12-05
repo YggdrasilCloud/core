@@ -116,4 +116,20 @@ final class FolderNameTest extends TestCase
 
         self::assertSame('My_Folder', $name->toString());
     }
+
+    public function testFromStringTrimIsNecessary(): void
+    {
+        // Verify trim is needed with various whitespace
+        $name = FolderName::fromString("\t My Folder \n");
+
+        self::assertSame('My Folder', $name->toString());
+    }
+
+    public function testSanitizeTrimsTrailingUnderscoresFromForbiddenChars(): void
+    {
+        // When forbidden char is at end, it becomes _, then final trim removes it
+        $name = FolderName::fromString('Folder*');
+
+        self::assertSame('Folder', $name->toString());
+    }
 }

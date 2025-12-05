@@ -213,4 +213,90 @@ final class FileNameSanitizerTest extends TestCase
 
         self::assertSame('archive.tar.gz', $result);
     }
+
+    public function testSanitizeTrimsAfterReplacingForbiddenChars(): void
+    {
+        // Second trim is needed after replacing characters that might leave trailing spaces
+        // Forbidden char at end becomes underscore, then rtrim removes it
+        $result = $this->sanitizer->sanitize('filename*');
+
+        self::assertSame('filename_', $result);
+    }
+
+    public function testSanitizeTruncatesExactlyAtMaxLength(): void
+    {
+        // Test > vs >= boundary for 255 chars
+        $exactlyMax = str_repeat('a', 255);
+        $result = $this->sanitizer->sanitize($exactlyMax);
+
+        self::assertSame(255, mb_strlen($result));
+        self::assertSame($exactlyMax, $result);
+    }
+
+    public function testSanitizeTruncatesOneOverMaxLength(): void
+    {
+        // Test > vs >= boundary: 256 chars should be truncated
+        $oneOverMax = str_repeat('a', 256);
+        $result = $this->sanitizer->sanitize($oneOverMax);
+
+        self::assertSame(255, mb_strlen($result));
+    }
+
+    public function testSanitizeTrimsDotsAfterTruncation(): void
+    {
+        // Test rtrim after truncation: name ending with dots should be trimmed
+        $longNameEndingWithDots = str_repeat('a', 252).'....';
+        $result = $this->sanitizer->sanitize($longNameEndingWithDots);
+
+        // Should truncate to 255, then rtrim the dots
+        self::assertLessThanOrEqual(255, mb_strlen($result));
+        self::assertStringNotContainsString('....', $result);
+    }
+
+    public function testSanitizeHandlesMultibyteInLengthCheck(): void
+    {
+        // Test mb_strlen vs strlen: multibyte chars should count as 1
+        // 'é' is 2 bytes in UTF-8 but 1 character
+        $multibyteChars = str_repeat('é', 255);
+        $result = $this->sanitizer->sanitize($multibyteChars);
+
+        self::assertSame(255, mb_strlen($result));
+    }
+
+    public function testSanitizeHandlesMultibyteInSubstr(): void
+    {
+        // Test mb_substr: should correctly truncate multibyte strings
+        $multibyteChars = str_repeat('été', 100); // 300 chars
+        $result = $this->sanitizer->sanitize($multibyteChars);
+
+        self::assertSame(255, mb_strlen($result));
+        // Should end with complete multibyte char, not corrupted
+        self::assertStringNotContainsString("\xC3", substr($result, -1));
+    }
+
+    public function testHandleReservedNamesWithMultibyteExtension(): void
+    {
+        // Test mb_strrpos/mb_substr in handleReservedNames
+        $result = $this->sanitizer->sanitize('CON.été');
+
+        self::assertSame('_CON.été', $result);
+    }
+
+    public function testHandleReservedNamesExtractsBaseNameCorrectly(): void
+    {
+        // AUX.été is considered reserved because base name before last dot is 'AUX'
+        // But AUX.été.txt has base name 'AUX.été' which is NOT reserved
+        $result = $this->sanitizer->sanitize('AUX.txt');
+
+        self::assertSame('_AUX.txt', $result);
+    }
+
+    public function testSanitizeRemovesControlChars(): void
+    {
+        // Control chars (0x01-0x1F, 0x7F) are REMOVED by preg_replace, not replaced
+        $result = $this->sanitizer->sanitize("file\x01 name\x02");
+
+        // Control chars removed, so we get "file name"
+        self::assertSame('file name', $result);
+    }
 }

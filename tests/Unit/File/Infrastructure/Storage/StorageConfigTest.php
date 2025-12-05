@@ -270,4 +270,59 @@ final class StorageConfigTest extends TestCase
         $config3 = new StorageConfig('test', ['value' => '']);
         self::assertSame('', $config3->get('value', 'default'));
     }
+
+    #[Test]
+    public function itVerifiesCoalesceOperatorReturnsProperly(): void
+    {
+        // Test the ?? operator: should return value when key exists, default when not
+        $config = new StorageConfig('test', ['exists' => 'value']);
+
+        // Existing key should NOT use default
+        self::assertNotSame('unused_default', $config->get('exists', 'unused_default'));
+        self::assertSame('value', $config->get('exists', 'unused_default'));
+
+        // Non-existing key should use default
+        self::assertSame('the_default', $config->get('missing', 'the_default'));
+    }
+
+    #[Test]
+    public function itDistinguishesEachTruthyMatchArm(): void
+    {
+        // Each truthy value must be tested AND verified it's not confused with falsy
+        // Using explicit string keys to avoid PHP array key type coercion
+        $tests = [
+            ['input' => '1', 'expected' => true],
+            ['input' => 'true', 'expected' => true],
+            ['input' => 'yes', 'expected' => true],
+            ['input' => 'on', 'expected' => true],
+            ['input' => '0', 'expected' => false],
+            ['input' => 'false', 'expected' => false],
+            ['input' => 'no', 'expected' => false],
+            ['input' => 'off', 'expected' => false],
+        ];
+
+        foreach ($tests as $test) {
+            $config = new StorageConfig('test', ['flag' => $test['input']]);
+            $result = $config->getBool('flag');
+
+            self::assertSame(
+                $test['expected'],
+                $result,
+                sprintf('Expected getBool("%s") to return %s', $test['input'], $test['expected'] ? 'true' : 'false')
+            );
+        }
+    }
+
+    #[Test]
+    public function itFallsBackToDefaultBoolCastForUnrecognizedValues(): void
+    {
+        // Test the "default => (bool) $value" branch
+        $configWithText = new StorageConfig('test', ['flag' => 'anything']);
+        $configWithEmptyString = new StorageConfig('test', ['flag' => '']);
+
+        // Non-empty string casts to true
+        self::assertTrue($configWithText->getBool('flag'));
+        // Empty string casts to false
+        self::assertFalse($configWithEmptyString->getBool('flag'));
+    }
 }

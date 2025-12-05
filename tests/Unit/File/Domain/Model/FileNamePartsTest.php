@@ -179,4 +179,25 @@ final class FileNamePartsTest extends TestCase
         self::assertSame('', $parts->extension);
         self::assertFalse($parts->hasExtension());
     }
+
+    public function testFromFileNameWithMultibyteCharactersAndTrailingDot(): void
+    {
+        // Test mb_strlen is necessary for multibyte filenames ending with dot
+        $parts = FileNameParts::fromFileName('été.');
+
+        self::assertSame('été.', $parts->baseName);
+        self::assertSame('', $parts->extension);
+        self::assertFalse($parts->hasExtension());
+    }
+
+    public function testFromFileNameMultibyteCharactersDotPosition(): void
+    {
+        // mb_strlen('été') = 3, strlen('été') = 5 (UTF-8)
+        // This test ensures mb_strlen is used correctly
+        $parts = FileNameParts::fromFileName('été.jpg');
+
+        self::assertSame('été', $parts->baseName);
+        self::assertSame('.jpg', $parts->extension);
+        self::assertTrue($parts->hasExtension());
+    }
 }
