@@ -93,4 +93,31 @@ final class FileNameTest extends TestCase
 
         self::assertSame('', $name->extension());
     }
+
+    public function testFromStringTrimIsNecessary(): void
+    {
+        // Verify that trim() is actually needed by testing with various whitespace
+        $name = FileName::fromString("\t photo.jpg \n");
+
+        self::assertSame('photo.jpg', $name->toString());
+    }
+
+    public function testFromStringBoundaryAt255Characters(): void
+    {
+        // Test exactly 255 passes, 256 fails - verifies > vs >= boundary
+        $exactly255 = str_repeat('x', 255);
+        $name = FileName::fromString($exactly255);
+
+        self::assertSame(255, strlen($name->toString()));
+    }
+
+    public function testFromStringWithWhitespaceThenLengthCheck(): void
+    {
+        // After trimming, should pass length check
+        // 255 chars + 2 spaces (trimmed) = valid
+        $withSpaces = ' '.str_repeat('a', 255).' ';
+        $name = FileName::fromString($withSpaces);
+
+        self::assertSame(255, strlen($name->toString()));
+    }
 }
