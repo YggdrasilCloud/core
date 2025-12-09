@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Photo\UserInterface\Http\Controller;
 
-use App\Photo\Infrastructure\Tus\TusServerFactory;
-use App\Photo\Infrastructure\Tus\TusUploadCompleteSubscriber;
+use App\Photo\Application\Port\ResumableUploadServerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use TusPhp\Events\UploadComplete;
 
 /**
  * Controller handling Tus protocol requests for resumable uploads.
@@ -25,8 +23,7 @@ use TusPhp\Events\UploadComplete;
 final readonly class TusUploadController
 {
     public function __construct(
-        private TusServerFactory $tusServerFactory,
-        private TusUploadCompleteSubscriber $uploadCompleteSubscriber,
+        private ResumableUploadServerInterface $uploadServer,
     ) {}
 
     /**
@@ -36,15 +33,6 @@ final readonly class TusUploadController
     #[Route('/api/uploads/tus/{uploadKey}', name: 'tus_upload_file', methods: ['HEAD', 'PATCH', 'DELETE'])]
     public function __invoke(): Response
     {
-        $server = $this->tusServerFactory->create();
-
-        // Register event listener for upload completion
-        $server->event()->addListener(
-            UploadComplete::NAME,
-            $this->uploadCompleteSubscriber
-        );
-
-        // tus-php handles the request internally and returns a Symfony Response
-        return $server->serve();
+        return $this->uploadServer->serve();
     }
 }
