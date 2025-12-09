@@ -23,8 +23,9 @@
         <env name="DATABASE_URL" value="postgresql://yggdrasilcloud_test:yggdrasilcloud_test@127.0.0.1:5433/yggdrasilcloud?serverVersion=16&amp;charset=utf8"/>
         <env name="STORAGE_DSN" value="storage://local?root=var/storage"/>
         <env name="CORS_ALLOW_ORIGIN" value="^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$"/>
-        <env name="PHOTO_MAX_FILE_SIZE" value="20971520"/>
-        <env name="PHOTO_ALLOWED_MIME_TYPES" value="image/jpeg,image/png,image/gif,image/webp"/>
+        <env name="PHOTO_MAX_FILE_SIZE" value="-1"/>
+        <env name="PHOTO_ALLOWED_MIME_TYPES" value="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,video/x-msvideo,video/x-matroska"/>
+        <env name="TUS_MAX_UPLOAD_SIZE" value="107374182400"/>
     </php>
 
     <testsuites>
