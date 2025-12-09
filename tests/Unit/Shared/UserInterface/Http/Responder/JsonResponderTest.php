@@ -102,4 +102,31 @@ final class JsonResponderTest extends TestCase
         $content = $this->decodeJsonResponse($response);
         self::assertSame('Internal server error', $content['title']);
     }
+
+    public function testErrorResponseWithAdditionalFields(): void
+    {
+        // Test that array_merge includes additional fields
+        $additional = [
+            'instance' => '/api/photos/123',
+            'errors' => ['field' => 'Name is required'],
+        ];
+
+        $response = $this->responder->error(
+            'Validation Error',
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+            'One or more fields are invalid',
+            $additional
+        );
+
+        self::assertSame(Response::HTTP_UNPROCESSABLE_ENTITY, $response->getStatusCode());
+
+        $content = $this->decodeJsonResponse($response);
+        self::assertSame('Validation Error', $content['title']);
+        self::assertSame('One or more fields are invalid', $content['detail']);
+        // Additional fields must be present (tests array_merge)
+        self::assertArrayHasKey('instance', $content);
+        self::assertSame('/api/photos/123', $content['instance']);
+        self::assertArrayHasKey('errors', $content);
+        self::assertSame(['field' => 'Name is required'], $content['errors']);
+    }
 }
