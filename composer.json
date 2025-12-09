@@ -10,6 +10,7 @@
         "ext-ctype": "*",
         "ext-iconv": "*",
         "ext-mbstring": "*",
+        "ankitpokhrel/tus-php": "^2.4",
         "azjezz/psl": "^4.2",
         "doctrine/dbal": "^3.10.3",
         "doctrine/doctrine-bundle": "^2.18",
