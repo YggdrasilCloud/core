@@ -224,6 +224,56 @@ final class PhotoQueryParamsTest extends TestCase
         self::assertSame(['jpg', 'png', 'gif'], $params->extensions);
     }
 
+    public function testFromRequestFiltersEmptyStringsFromCommaSeparatedValues(): void
+    {
+        // Test that array_filter removes empty strings: "jpg,,png" -> ['jpg', 'png']
+        $request = new Request(['extension' => 'jpg,,png']);
+
+        $params = PhotoQueryParams::fromRequest($request);
+
+        self::assertSame(['jpg', 'png'], $params->extensions);
+        self::assertCount(2, $params->extensions);
+    }
+
+    public function testFromRequestTrimsWhitespaceFromCommaSeparatedValues(): void
+    {
+        // Test that trim is applied: " jpg , png " -> ['jpg', 'png']
+        $request = new Request(['extension' => ' jpg , png ']);
+
+        $params = PhotoQueryParams::fromRequest($request);
+
+        self::assertSame(['jpg', 'png'], $params->extensions);
+    }
+
+    public function testFromRequestReindexesArrayFromCommaSeparatedValues(): void
+    {
+        // Test that array_values reindexes: after filter, keys are 0, 1, 2...
+        $request = new Request(['extension' => 'jpg,,png,,gif']);
+
+        $params = PhotoQueryParams::fromRequest($request);
+
+        // Without array_values, keys would be [0, 2, 4] after filter
+        // With array_values, keys should be [0, 1, 2]
+        self::assertSame(['jpg', 'png', 'gif'], $params->extensions);
+        self::assertArrayHasKey(0, $params->extensions);
+        self::assertArrayHasKey(1, $params->extensions);
+        self::assertArrayHasKey(2, $params->extensions);
+        self::assertArrayNotHasKey(3, $params->extensions);
+    }
+
+    public function testFromRequestFiltersEmptyStringsFromArrayMimeTypes(): void
+    {
+        // Test that array_filter removes empty/falsy values from array input
+        $request = new Request(['mimeType' => ['image/jpeg', '', 'image/png', '0']]);
+
+        $params = PhotoQueryParams::fromRequest($request);
+
+        // Empty string filtered out, but '0' is kept (cast to string "0")
+        self::assertContains('image/jpeg', $params->mimeTypes);
+        self::assertContains('image/png', $params->mimeTypes);
+        self::assertNotContains('', $params->mimeTypes);
+    }
+
     public function testFromRequestParsesSizeRange(): void
     {
         $request = new Request(['sizeMin' => '1024', 'sizeMax' => '2048']);

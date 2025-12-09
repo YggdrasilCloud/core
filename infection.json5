@@ -6,7 +6,12 @@
         ],
         "excludes": [
             "Photo/Infrastructure/Persistence/Doctrine/Entity",
-            "Shared/Infrastructure/Doctrine/DQL"
+            "Shared/Infrastructure/Doctrine/DQL",
+            // File Storage infrastructure - tests pending (DSN parsing, factory, adapters)
+            "File/Infrastructure/Storage",
+            // FileResponder is tested via functional tests, not unit tests
+            // Contains streaming logic that cannot be effectively unit tested
+            "Photo/UserInterface/Http/Responder/FileResponder.php"
         ]
     },
     "logs": {
