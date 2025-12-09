@@ -7,6 +7,10 @@ parameters:
     photo.max_file_size: '%env(int:PHOTO_MAX_FILE_SIZE)%'
     photo.allowed_mime_types: '%env(csv:PHOTO_ALLOWED_MIME_TYPES)%'
     photo.storage_path: '%kernel.project_dir%/var/storage/photos'
+    # Tus upload configuration
+    tus.upload_dir: '%kernel.project_dir%/var/storage/uploads/tus'
+    tus.cache_dir: '%kernel.project_dir%/var/cache/tus'
+    tus.max_upload_size: '%env(int:TUS_MAX_UPLOAD_SIZE)%'
 
 services:
     # default configuration for services in *this* file
@@ -72,3 +76,10 @@ services:
     App\File\Domain\Service\PhysicalFolderStorage:
         arguments:
             $basePath: '%kernel.project_dir%/var/storage'
+
+    # Tus Upload - Resumable file uploads
+    App\Photo\Infrastructure\Tus\TusServerFactory:
+        arguments:
+            $uploadDir: '%tus.upload_dir%'
+            $cacheDir: '%tus.cache_dir%'
+            $maxUploadSize: '%tus.max_upload_size%'
