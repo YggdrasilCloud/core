@@ -32,6 +32,9 @@ doctrine:
                 alias: Photo
         controller_resolver:
             auto_mapping: false
+        dql:
+            string_functions:
+                COALESCE: App\Shared\Infrastructure\Doctrine\DQL\CoalesceFunction
 
 when@test:
     doctrine:
