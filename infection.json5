@@ -5,7 +5,8 @@
             "src"
         ],
         "excludes": [
-            "Photo/Infrastructure/Persistence/Doctrine/Entity"
+            "Photo/Infrastructure/Persistence/Doctrine/Entity",
+            "Shared/Infrastructure/Doctrine/DQL"
         ]
     },
     "logs": {
