@@ -83,3 +83,7 @@ services:
             $uploadDir: '%tus.upload_dir%'
             $cacheDir: '%tus.cache_dir%'
             $maxUploadSize: '%tus.max_upload_size%'
+
+    # Bind the ResumableUploadServerInterface to Tus implementation
+    App\Photo\Application\Port\ResumableUploadServerInterface:
+        class: App\Photo\Infrastructure\Tus\TusResumableUploadServer
