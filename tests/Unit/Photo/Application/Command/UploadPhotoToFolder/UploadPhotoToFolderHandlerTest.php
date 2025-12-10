@@ -9,6 +9,7 @@ use App\File\Domain\Port\FileStorageInterface;
 use App\File\Domain\Service\FileCollisionResolver;
 use App\Photo\Application\Command\UploadPhotoToFolder\UploadPhotoToFolderCommand;
 use App\Photo\Application\Command\UploadPhotoToFolder\UploadPhotoToFolderHandler;
+use App\Photo\Application\Port\ThumbnailServiceInterface;
 use App\Photo\Domain\Model\Folder;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\FolderName;
@@ -17,23 +18,20 @@ use App\Photo\Domain\Model\UserId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
 use App\Photo\Domain\Service\FileSystemPathBuilder;
-use App\Photo\Domain\Service\ThumbnailGenerator;
 use DateTimeImmutable;
 use DomainException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 final class UploadPhotoToFolderHandlerTest extends TestCase
 {
     private MockObject&PhotoRepositoryInterface $photoRepository;
     private FolderRepositoryInterface&MockObject $folderRepository;
     private FileStorageInterface&MockObject $fileStorage;
-    private ThumbnailGenerator $thumbnailGenerator;
+    private MockObject&ThumbnailServiceInterface $thumbnailService;
     private FileSystemPathBuilder&MockObject $pathBuilder;
     private FileCollisionResolver&MockObject $collisionResolver;
     private UploadPhotoToFolderHandler $handler;
-    private string $tempDir;
 
     protected function setUp(): void
     {
@@ -42,26 +40,16 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
         $this->fileStorage = $this->createMock(FileStorageInterface::class);
         $this->pathBuilder = $this->createMock(FileSystemPathBuilder::class);
         $this->collisionResolver = $this->createMock(FileCollisionResolver::class);
-
-        $this->tempDir = sys_get_temp_dir().'/upload_handler_test_'.uniqid();
-        mkdir($this->tempDir, 0755, true);
-
-        $logger = $this->createMock(LoggerInterface::class);
-        $this->thumbnailGenerator = new ThumbnailGenerator($this->tempDir, $logger);
+        $this->thumbnailService = $this->createMock(ThumbnailServiceInterface::class);
 
         $this->handler = new UploadPhotoToFolderHandler(
             $this->photoRepository,
             $this->folderRepository,
             $this->fileStorage,
-            $this->thumbnailGenerator,
+            $this->thumbnailService,
             $this->pathBuilder,
             $this->collisionResolver,
         );
-    }
-
-    protected function tearDown(): void
-    {
-        $this->removeDirectory($this->tempDir);
     }
 
     public function testInvokeThrowsExceptionWhenFolderNotFound(): void
@@ -84,16 +72,8 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
     {
         $command = $this->createCommand();
         $folder = $this->createFolder($command->folderId);
-
-        // Create a real source image for thumbnail generation
         $sourceKey = 'photos/Test Folder/test-photo.jpg';
-        $sourcePath = $this->tempDir.'/'.$sourceKey;
-        mkdir(dirname($sourcePath), 0755, true);
-
-        $image = imagecreatetruecolor(400, 300);
-        self::assertNotFalse($image);
-        imagejpeg($image, $sourcePath);
-        imagedestroy($image);
+        $thumbnailKey = 'thumbs/photos/Test Folder/test-photo_thumb.jpg';
 
         $this->folderRepository
             ->expects(self::once())
@@ -133,15 +113,22 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
             ->willReturn($storedObject)
         ;
 
+        $this->thumbnailService
+            ->expects(self::once())
+            ->method('generateThumbnail')
+            ->with($storedObject)
+            ->willReturn($thumbnailKey)
+        ;
+
         $this->photoRepository
             ->expects(self::once())
             ->method('save')
-            ->with(self::callback(static function (Photo $photo) use ($command): bool {
+            ->with(self::callback(static function (Photo $photo) use ($command, $thumbnailKey): bool {
                 return $photo->folderId()->toString() === $command->folderId
                     && $photo->fileName()->toString() === $command->fileName
                     && $photo->mimeType() === $command->mimeType
                     && $photo->sizeInBytes() === $command->sizeInBytes
-                    && $photo->thumbnailKey() !== null; // Thumbnail should be generated
+                    && $photo->thumbnailKey() === $thumbnailKey;
             }))
         ;
 
@@ -152,14 +139,13 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
     {
         $command = $this->createCommand();
         $folder = $this->createFolder($command->folderId);
+        $sourceKey = 'photos/Test Folder/test-photo.jpg';
 
         $this->folderRepository
             ->expects(self::once())
             ->method('findById')
             ->willReturn($folder)
         ;
-
-        $sourceKey = 'photos/Test Folder/test-photo.jpg';
 
         $this->pathBuilder
             ->expects(self::once())
@@ -175,7 +161,6 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
             ->willReturn($sourceKey)
         ;
 
-        // Don't create the source image file - this will cause thumbnail generation to fail
         $storedObject = new StoredObject(
             key: $sourceKey,
             adapter: 'local',
@@ -186,6 +171,14 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
             ->expects(self::once())
             ->method('save')
             ->willReturn($storedObject)
+        ;
+
+        // ThumbnailService returns null when thumbnail generation fails
+        $this->thumbnailService
+            ->expects(self::once())
+            ->method('generateThumbnail')
+            ->with($storedObject)
+            ->willReturn(null)
         ;
 
         $this->photoRepository
@@ -277,19 +270,5 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
             UserId::fromString('550e8400-e29b-41d4-a716-446655440003'),
             null
         );
-    }
-
-    private function removeDirectory(string $dir): void
-    {
-        if (!is_dir($dir)) {
-            return;
-        }
-
-        $files = array_diff(scandir($dir), ['.', '..']);
-        foreach ($files as $file) {
-            $path = $dir.'/'.$file;
-            is_dir($path) ? $this->removeDirectory($path) : unlink($path);
-        }
-        rmdir($dir);
     }
 }
