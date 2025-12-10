@@ -49,10 +49,18 @@ services:
     # GetPhotoFileHandler now uses FileStorageInterface
     # which is automatically injected by Symfony's autowiring
 
-    # Photo Bounded Context - Thumbnail generator
+    # Photo Bounded Context - Thumbnail generator (Domain service for local filesystem)
     App\Photo\Domain\Service\ThumbnailGenerator:
         arguments:
             $storagePath: '%kernel.project_dir%/var/storage'
+
+    # Photo Bounded Context - Thumbnail service (Application service for any storage)
+    App\Photo\Application\Service\ThumbnailService:
+        arguments:
+            $tempDir: '%kernel.project_dir%/var/cache/thumbnails'
+
+    App\Photo\Application\Port\ThumbnailServiceInterface:
+        alias: App\Photo\Application\Service\ThumbnailService
 
     # Commands
     App\Command\SeedTestDataCommand:
@@ -87,3 +95,8 @@ services:
     # Bind the ResumableUploadServerInterface to Tus implementation
     App\Photo\Application\Port\ResumableUploadServerInterface:
         class: App\Photo\Infrastructure\Tus\TusResumableUploadServer
+
+    # Storage S3 Bridge (when yggdrasilcloud/storage-s3 is installed)
+    YggdrasilCloud\StorageS3\S3StorageBridge:
+        tags:
+            - { name: 'storage.bridge' }
