@@ -6,6 +6,7 @@ namespace App\Photo\Application\Command\UploadPhotoToFolder;
 
 use App\File\Domain\Port\FileStorageInterface;
 use App\File\Domain\Service\FileCollisionResolver;
+use App\Photo\Application\Port\ThumbnailServiceInterface;
 use App\Photo\Domain\Model\FileName;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\Photo;
@@ -14,9 +15,7 @@ use App\Photo\Domain\Model\UserId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
 use App\Photo\Domain\Service\FileSystemPathBuilder;
-use App\Photo\Domain\Service\ThumbnailGenerator;
 use DomainException;
-use Exception;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 use function sprintf;
@@ -28,7 +27,7 @@ final readonly class UploadPhotoToFolderHandler
         private PhotoRepositoryInterface $photoRepository,
         private FolderRepositoryInterface $folderRepository,
         private FileStorageInterface $fileStorage,
-        private ThumbnailGenerator $thumbnailGenerator,
+        private ThumbnailServiceInterface $thumbnailService,
         private FileSystemPathBuilder $pathBuilder,
         private FileCollisionResolver $collisionResolver,
     ) {}
@@ -57,17 +56,8 @@ final readonly class UploadPhotoToFolderHandler
             $command->sizeInBytes
         );
 
-        // Generate the thumbnail
-        $thumbnailKey = null;
-
-        try {
-            $thumbnailPath = $this->thumbnailGenerator->generateThumbnail($storedObject->key);
-            // Use the actual generated thumbnail path as the key
-            $thumbnailKey = $thumbnailPath;
-        } catch (Exception) {
-            // If generation fails, continue without thumbnail
-            // Future improvement: log the error
-        }
+        // Generate the thumbnail (handles both local and remote storage)
+        $thumbnailKey = $this->thumbnailService->generateThumbnail($storedObject);
 
         // Create the Photo entity
         $photo = Photo::upload(
