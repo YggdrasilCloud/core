@@ -11,7 +11,12 @@
             "File/Infrastructure/Storage",
             // FileResponder is tested via functional tests, not unit tests
             // Contains streaming logic that cannot be effectively unit tested
-            "Photo/UserInterface/Http/Responder/FileResponder.php"
+            "Photo/UserInterface/Http/Responder/FileResponder.php",
+            // ThumbnailService contains shell exec (vips) and GD image manipulation
+            // that cannot be effectively mutation tested
+            "Photo/Application/Service/ThumbnailService.php",
+            // Application ports are interfaces with no code to mutate
+            "Photo/Application/Port"
         ]
     },
     "logs": {
