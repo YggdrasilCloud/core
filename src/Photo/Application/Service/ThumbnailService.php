@@ -25,6 +25,9 @@ use function fopen;
 final readonly class ThumbnailService implements ThumbnailServiceInterface
 {
     private const LOCAL_ADAPTER = 'local';
+    private const DEFAULT_THUMBNAIL_WIDTH = 300;
+    private const DEFAULT_THUMBNAIL_HEIGHT = 300;
+    private const JPEG_QUALITY = 85;
 
     public function __construct(
         private ThumbnailGenerator $thumbnailGenerator,
@@ -82,7 +85,7 @@ final readonly class ThumbnailService implements ThumbnailServiceInterface
 
         // Download original to temp file
         $originalStream = $this->fileStorage->readStream($storedObject->key);
-        $tempOriginalPath = $this->tempDir.'/ygg_orig_'.uniqid().'.tmp';
+        $tempOriginalPath = $this->tempDir.'/ygg_orig_'.bin2hex(random_bytes(16)).'.tmp';
 
         try {
             $tempFile = fopen($tempOriginalPath, 'w');
@@ -172,14 +175,14 @@ final readonly class ThumbnailService implements ThumbnailServiceInterface
         return $returnCode === 0 && !empty($output);
     }
 
-    private function generateWithVips(string $sourcePath, string $outputPath, int $maxWidth = 300, int $maxHeight = 300): void
+    private function generateWithVips(string $sourcePath, string $outputPath, int $maxWidth = self::DEFAULT_THUMBNAIL_WIDTH, int $maxHeight = self::DEFAULT_THUMBNAIL_HEIGHT): void
     {
         $command = sprintf(
             'vipsthumbnail %s -s %dx%d -o %s 2>&1',
             escapeshellarg($sourcePath),
             $maxWidth,
             $maxHeight,
-            escapeshellarg($outputPath.'[Q=85]')
+            escapeshellarg($outputPath.'[Q='.self::JPEG_QUALITY.']')
         );
 
         $output = [];
@@ -191,7 +194,7 @@ final readonly class ThumbnailService implements ThumbnailServiceInterface
         }
     }
 
-    private function generateWithGd(string $sourcePath, string $outputPath, int $maxWidth = 300, int $maxHeight = 300): void
+    private function generateWithGd(string $sourcePath, string $outputPath, int $maxWidth = self::DEFAULT_THUMBNAIL_WIDTH, int $maxHeight = self::DEFAULT_THUMBNAIL_HEIGHT): void
     {
         $imageInfo = getimagesize($sourcePath);
         if ($imageInfo === false) {
@@ -227,7 +230,7 @@ final readonly class ThumbnailService implements ThumbnailServiceInterface
         imagecopyresampled($thumbnail, $source, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
         imagedestroy($source);
 
-        if (!imagejpeg($thumbnail, $outputPath, 85)) {
+        if (!imagejpeg($thumbnail, $outputPath, self::JPEG_QUALITY)) {
             imagedestroy($thumbnail);
 
             throw new RuntimeException('Failed to save thumbnail');
