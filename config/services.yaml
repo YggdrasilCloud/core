@@ -96,7 +96,6 @@ services:
     App\Photo\Application\Port\ResumableUploadServerInterface:
         class: App\Photo\Infrastructure\Tus\TusResumableUploadServer
 
-    # Storage S3 Bridge (when yggdrasilcloud/storage-s3 is installed)
-    YggdrasilCloud\StorageS3\S3StorageBridge:
-        tags:
-            - { name: 'storage.bridge' }
+    # Storage bridges are auto-discovered via tagged_iterator 'storage.bridge'
+    # External packages (e.g., yggdrasilcloud/storage-s3) must register their
+    # own bridges in their bundle configuration or services.yaml
