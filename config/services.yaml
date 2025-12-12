@@ -54,6 +54,14 @@ services:
         arguments:
             $storagePath: '%kernel.project_dir%/var/storage'
 
+    # Photo Bounded Context - Video thumbnail generator
+    App\Photo\Domain\Service\VideoThumbnailGenerator:
+        arguments:
+            $storagePath: '%kernel.project_dir%/var/storage'
+
+    # Shared Infrastructure - Process runner for external commands
+    App\Shared\Infrastructure\Process\ProcessRunner: ~
+
     # Photo Bounded Context - Thumbnail service (Application service for any storage)
     App\Photo\Application\Service\ThumbnailService:
         arguments:
