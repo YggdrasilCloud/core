@@ -45,7 +45,9 @@ final class StorageDirectorySubscriber implements EventSubscriberInterface
 
         foreach ($directories as $directory) {
             if (!is_dir($directory)) {
-                mkdir($directory, 0755, true);
+                // Use 0777 to allow any user (www-data, 1000, etc.) to write
+                // This avoids permission issues when UID changes between runs
+                mkdir($directory, 0777, true);
             }
         }
     }
