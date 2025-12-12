@@ -28,7 +28,8 @@
         "symfony/serializer": "7.3.*",
         "symfony/uid": "7.3.*",
         "symfony/validator": "7.3.*",
-        "symfony/yaml": "7.3.*"
+        "symfony/yaml": "7.3.*",
+        "yggdrasilcloud/storage-s3": "^0.2"
     },
     "config": {
         "allow-plugins": {
