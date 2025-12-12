@@ -6,6 +6,7 @@ namespace App\Shared\Infrastructure\Process;
 
 use RuntimeException;
 
+use function fclose;
 use function is_resource;
 use function microtime;
 use function proc_close;
@@ -15,6 +16,8 @@ use function proc_terminate;
 use function sprintf;
 use function stream_get_contents;
 use function stream_set_blocking;
+use function strlen;
+use function substr;
 use function usleep;
 
 /**
@@ -22,13 +25,15 @@ use function usleep;
  *
  * Provides a safe way to run external processes with:
  * - Configurable timeout (prevents hanging)
- * - Captured stdout/stderr output
+ * - Captured stdout/stderr output (capped to prevent memory exhaustion)
  * - Proper resource cleanup
+ * - Graceful termination (SIGTERM then SIGKILL)
  */
-final class ProcessRunner
+class ProcessRunner
 {
     private const int DEFAULT_TIMEOUT_SECONDS = 5;
     private const int POLL_INTERVAL_MICROSECONDS = 20000; // 20ms
+    private const int MAX_OUTPUT_BYTES = 262144; // 256 KiB per stream
 
     /**
      * Run a command with timeout.
@@ -67,9 +72,16 @@ final class ProcessRunner
         while (true) {
             $status = proc_get_status($process);
 
-            // Collect output
-            $stdout .= stream_get_contents($pipes[1]) ?: '';
-            $stderr .= stream_get_contents($pipes[2]) ?: '';
+            // Collect output with cap
+            $stdoutChunk = stream_get_contents($pipes[1]) ?: '';
+            $stderrChunk = stream_get_contents($pipes[2]) ?: '';
+
+            if ($stdoutChunk !== '') {
+                $stdout = $this->appendCapped($stdout, $stdoutChunk);
+            }
+            if ($stderrChunk !== '') {
+                $stderr = $this->appendCapped($stderr, $stderrChunk);
+            }
 
             if (!$status['running']) {
                 break;
@@ -91,8 +103,8 @@ final class ProcessRunner
         }
 
         // Collect any remaining output
-        $stdout .= stream_get_contents($pipes[1]) ?: '';
-        $stderr .= stream_get_contents($pipes[2]) ?: '';
+        $stdout = $this->appendCapped($stdout, stream_get_contents($pipes[1]) ?: '');
+        $stderr = $this->appendCapped($stderr, stream_get_contents($pipes[2]) ?: '');
 
         // Close pipes
         fclose($pipes[1]);
@@ -111,7 +123,11 @@ final class ProcessRunner
      */
     private function terminateProcess($process, array $pipes): void
     {
-        // Send SIGKILL
+        // First SIGTERM for graceful shutdown
+        proc_terminate($process, 15);
+        usleep(100000); // 100ms grace period
+
+        // Then SIGKILL if still running
         proc_terminate($process, 9);
 
         // Close all pipes
@@ -122,5 +138,25 @@ final class ProcessRunner
         }
 
         proc_close($process);
+    }
+
+    /**
+     * Append chunk to buffer, keeping only the last MAX_OUTPUT_BYTES.
+     * Keeps the end (most useful for debugging errors).
+     */
+    private function appendCapped(string $buffer, string $chunk): string
+    {
+        if ($chunk === '') {
+            return $buffer;
+        }
+
+        $buffer .= $chunk;
+
+        if (strlen($buffer) <= self::MAX_OUTPUT_BYTES) {
+            return $buffer;
+        }
+
+        // Keep the tail (most recent output)
+        return substr($buffer, -self::MAX_OUTPUT_BYTES);
     }
 }
