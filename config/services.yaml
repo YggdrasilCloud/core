@@ -107,3 +107,8 @@ services:
     # Storage bridges are auto-discovered via tagged_iterator 'storage.bridge'
     # External packages (e.g., yggdrasilcloud/storage-s3) must register their
     # own bridges in their bundle configuration or services.yaml
+
+    # Storage directory auto-creation on first request
+    App\Shared\Infrastructure\EventSubscriber\StorageDirectorySubscriber:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
