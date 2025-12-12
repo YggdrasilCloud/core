@@ -10,12 +10,17 @@ use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
+use function dirname;
 use function escapeshellarg;
 use function file_exists;
+use function in_array;
+use function is_array;
 use function is_dir;
+use function is_numeric;
 use function json_decode;
 use function min;
 use function mkdir;
+use function rename;
 use function sprintf;
 use function str_contains;
 use function str_starts_with;
@@ -32,7 +37,7 @@ use function unlink;
  * - If duration < 10s: use 1s
  * - Otherwise: use min(duration × 10%, 5s)
  */
-final readonly class VideoThumbnailGenerator
+class VideoThumbnailGenerator
 {
     private const int DEFAULT_MAX_WIDTH = 300;
     private const int DEFAULT_MAX_HEIGHT = 300;
@@ -138,12 +143,8 @@ final readonly class VideoThumbnailGenerator
         // Get video duration and select frame timestamp
         $frameTimestamp = $this->selectFrameTimestamp($absolutePath);
 
-        // Generate thumbnail with FFmpeg
+        // Generate thumbnail with FFmpeg (atomic write via temp file)
         $this->extractFrame($absolutePath, $thumbnailAbsolutePath, $frameTimestamp, $maxWidth, $maxHeight);
-
-        if (!file_exists($thumbnailAbsolutePath)) {
-            throw new RuntimeException('FFmpeg did not produce a thumbnail');
-        }
 
         $this->logger->info('Video thumbnail generated', [
             'source' => $sourceFilePath,
@@ -165,6 +166,19 @@ final readonly class VideoThumbnailGenerator
         if (file_exists($fullPath)) {
             unlink($fullPath);
         }
+    }
+
+    /**
+     * Check if a command is available on the system.
+     * Protected to allow override in tests.
+     */
+    protected function isCommandAvailable(string $command): bool
+    {
+        $output = [];
+        $returnCode = 0;
+        exec('command -v '.escapeshellarg($command).' 2>/dev/null', $output, $returnCode);
+
+        return $returnCode === 0 && $output !== [];
     }
 
     /**
@@ -196,8 +210,9 @@ final readonly class VideoThumbnailGenerator
      */
     private function getVideoDuration(string $videoPath): ?float
     {
+        // Use minimal ffprobe output for efficiency
         $command = sprintf(
-            'ffprobe -v quiet -print_format json -show_format %s',
+            'ffprobe -v error -print_format json -show_entries format=duration %s',
             escapeshellarg($videoPath)
         );
 
@@ -207,7 +222,8 @@ final readonly class VideoThumbnailGenerator
             if (!$result->isSuccessful()) {
                 $this->logger->debug('ffprobe failed to get duration', [
                     'video' => $videoPath,
-                    'output' => $result->getOutput(),
+                    'stdout' => $result->stdout,
+                    'stderr' => $result->stderr,
                 ]);
 
                 return null;
@@ -241,6 +257,8 @@ final readonly class VideoThumbnailGenerator
 
     /**
      * Extract a frame from video using FFmpeg.
+     *
+     * Uses atomic write: writes to temp file first, then renames.
      */
     private function extractFrame(
         string $videoPath,
@@ -249,20 +267,29 @@ final readonly class VideoThumbnailGenerator
         int $maxWidth,
         int $maxHeight,
     ): void {
+        // Atomic write: write to temp file, then rename
+        $tmpOutputPath = $outputPath.'.tmp';
+
+        // Clean up any leftover temp file
+        if (file_exists($tmpOutputPath)) {
+            unlink($tmpOutputPath);
+        }
+
         // FFmpeg command:
-        // -ss: seek to timestamp (before -i for faster seeking)
-        // -i: input file
-        // -vframes 1: extract only 1 frame
-        // -vf scale: resize maintaining aspect ratio, using -1 for auto-calculate
+        // -hide_banner -loglevel error: reduce noise
+        // -ss before -i: fast seek
+        // -frames:v 1: extract only 1 frame
+        // -vf scale: resize maintaining aspect ratio
         // -q:v: JPEG quality (2=best, 31=worst)
+        // NO 2>&1: keep stdout/stderr separate
         $command = sprintf(
-            'ffmpeg -ss %s -i %s -vframes 1 -vf "scale=%d:%d:force_original_aspect_ratio=decrease" -q:v %d -y %s 2>&1',
+            'ffmpeg -hide_banner -loglevel error -ss %s -i %s -frames:v 1 -vf "scale=%d:%d:force_original_aspect_ratio=decrease" -q:v %d -y %s',
             escapeshellarg(sprintf('%.3f', $timestamp)),
             escapeshellarg($videoPath),
             $maxWidth,
             $maxHeight,
             self::JPEG_QUALITY,
-            escapeshellarg($outputPath)
+            escapeshellarg($tmpOutputPath)
         );
 
         $result = $this->processRunner->run($command, self::TIMEOUT_SECONDS);
@@ -272,10 +299,27 @@ final readonly class VideoThumbnailGenerator
                 'video' => $videoPath,
                 'timestamp' => $timestamp,
                 'exit_code' => $result->exitCode,
-                'output' => $result->getOutput(),
+                'stdout' => $result->stdout,
+                'stderr' => $result->stderr,
             ]);
 
+            // Clean up temp file on failure
+            if (file_exists($tmpOutputPath)) {
+                unlink($tmpOutputPath);
+            }
+
             throw new RuntimeException('FFmpeg failed to extract frame: '.$result->getOutput());
+        }
+
+        if (!file_exists($tmpOutputPath)) {
+            throw new RuntimeException('FFmpeg did not produce a thumbnail');
+        }
+
+        // Atomic rename (same filesystem)
+        if (!rename($tmpOutputPath, $outputPath)) {
+            unlink($tmpOutputPath);
+
+            throw new RuntimeException('Failed to move temporary thumbnail into place');
         }
     }
 
@@ -306,14 +350,5 @@ final readonly class VideoThumbnailGenerator
         if (str_contains($path, '..')) {
             throw new InvalidArgumentException('Path cannot contain directory traversal (..)');
         }
-    }
-
-    private function isCommandAvailable(string $command): bool
-    {
-        $output = [];
-        $returnCode = 0;
-        exec('command -v '.escapeshellarg($command).' 2>/dev/null', $output, $returnCode);
-
-        return $returnCode === 0 && $output !== [];
     }
 }
