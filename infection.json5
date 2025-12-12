@@ -16,7 +16,10 @@
             // that cannot be effectively mutation tested
             "Photo/Application/Service/ThumbnailService.php",
             // Application ports are interfaces with no code to mutate
-            "Photo/Application/Port"
+            "Photo/Application/Port",
+            // ProcessRunner wraps Symfony Process - tests execute real shell commands
+            // with no mockable logic to mutate
+            "Shared/Infrastructure/Process"
         ]
     },
     "logs": {
