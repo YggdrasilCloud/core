@@ -127,8 +127,11 @@ class ProcessRunner
         proc_terminate($process, 15);
         usleep(100000); // 100ms grace period
 
-        // Then SIGKILL if still running
-        proc_terminate($process, 9);
+        // Only SIGKILL if still running (avoid killing already terminated process)
+        $status = proc_get_status($process);
+        if ($status['running']) {
+            proc_terminate($process, 9);
+        }
 
         // Close all pipes
         foreach ($pipes as $pipe) {
