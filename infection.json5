@@ -19,7 +19,10 @@
             "Photo/Application/Port",
             // ProcessRunner wraps Symfony Process - tests execute real shell commands
             // with no mockable logic to mutate
-            "Shared/Infrastructure/Process"
+            "Shared/Infrastructure/Process",
+            // VideoThumbnailGenerator uses FFmpeg/ffprobe - file system and process operations
+            // that require extensive mocking. Tests verify behavior but mutations escape.
+            "Photo/Domain/Service/VideoThumbnailGenerator.php"
         ]
     },
     "logs": {
