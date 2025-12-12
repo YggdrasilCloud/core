@@ -9,6 +9,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
+/**
+ * Tests use `php -r` commands for portability across different OS/shells.
+ */
 #[CoversClass(ProcessRunner::class)]
 final class ProcessRunnerTest extends TestCase
 {
@@ -21,7 +24,7 @@ final class ProcessRunnerTest extends TestCase
 
     public function testRunSuccessfulCommand(): void
     {
-        $result = $this->runner->run('echo "hello world"');
+        $result = $this->runner->run('php -r "fwrite(STDOUT, \'hello world\');"');
 
         self::assertTrue($result->isSuccessful());
         self::assertSame(0, $result->exitCode);
@@ -30,7 +33,7 @@ final class ProcessRunnerTest extends TestCase
 
     public function testRunFailingCommand(): void
     {
-        $result = $this->runner->run('exit 42');
+        $result = $this->runner->run('php -r "exit(42);"');
 
         self::assertFalse($result->isSuccessful());
         self::assertSame(42, $result->exitCode);
@@ -38,10 +41,10 @@ final class ProcessRunnerTest extends TestCase
 
     public function testRunCapturesStderr(): void
     {
-        $result = $this->runner->run('echo "error" >&2');
+        $result = $this->runner->run('php -r "fwrite(STDERR, \'error message\');"');
 
         self::assertTrue($result->isSuccessful());
-        self::assertStringContainsString('error', $result->stderr);
+        self::assertStringContainsString('error message', $result->stderr);
     }
 
     public function testRunTimesOut(): void
@@ -50,12 +53,12 @@ final class ProcessRunnerTest extends TestCase
         $this->expectExceptionMessage('timed out');
 
         // Sleep for 5 seconds but timeout after 1 second
-        $this->runner->run('sleep 5', 1);
+        $this->runner->run('php -r "sleep(5);"', 1);
     }
 
     public function testGetOutputCombinesStdoutAndStderr(): void
     {
-        $result = $this->runner->run('echo "out" && echo "err" >&2');
+        $result = $this->runner->run('php -r "fwrite(STDOUT, \'out\'); fwrite(STDERR, \'err\');"');
 
         $output = $result->getOutput();
         self::assertStringContainsString('out', $output);
