@@ -24,6 +24,7 @@ use function rename;
 use function sprintf;
 use function str_contains;
 use function str_starts_with;
+use function trim;
 use function unlink;
 
 /**
@@ -62,9 +63,9 @@ class VideoThumbnailGenerator
     private bool $ffprobeAvailable;
 
     public function __construct(
-        private string $storagePath,
-        private LoggerInterface $logger,
-        private ProcessRunner $processRunner,
+        private readonly string $storagePath,
+        private readonly LoggerInterface $logger,
+        private readonly ProcessRunner $processRunner,
     ) {
         $this->ffmpegAvailable = $this->isCommandAvailable('ffmpeg');
         $this->ffprobeAvailable = $this->isCommandAvailable('ffprobe');
@@ -174,11 +175,25 @@ class VideoThumbnailGenerator
      */
     protected function isCommandAvailable(string $command): bool
     {
-        $output = [];
-        $returnCode = 0;
-        exec('command -v '.escapeshellarg($command).' 2>/dev/null', $output, $returnCode);
+        // 1) Prefer array execution (no shell) if `which` exists in the environment
+        try {
+            $result = $this->processRunner->runArray(['which', $command], 2);
 
-        return $returnCode === 0 && $output !== [];
+            if ($result->isSuccessful() && trim($result->stdout) !== '') {
+                return true;
+            }
+        } catch (RuntimeException) {
+            // Ignore and fall back
+        }
+
+        // 2) Fallback: use shell builtin (best-effort) to avoid false negatives in minimal images
+        try {
+            $result = $this->processRunner->run('command -v '.escapeshellarg($command).' 2>/dev/null', 2);
+
+            return $result->isSuccessful() && trim($result->stdout) !== '';
+        } catch (RuntimeException) {
+            return false;
+        }
     }
 
     /**
@@ -210,14 +225,14 @@ class VideoThumbnailGenerator
      */
     private function getVideoDuration(string $videoPath): ?float
     {
-        // Use minimal ffprobe output for efficiency
-        $command = sprintf(
-            'ffprobe -v error -print_format json -show_entries format=duration %s',
-            escapeshellarg($videoPath)
-        );
-
         try {
-            $result = $this->processRunner->run($command, self::TIMEOUT_SECONDS);
+            $result = $this->processRunner->runArray([
+                'ffprobe',
+                '-v', 'error',
+                '-print_format', 'json',
+                '-show_entries', 'format=duration',
+                $videoPath,
+            ], self::TIMEOUT_SECONDS);
 
             if (!$result->isSuccessful()) {
                 $this->logger->debug('ffprobe failed to get duration', [
@@ -275,51 +290,57 @@ class VideoThumbnailGenerator
             unlink($tmpOutputPath);
         }
 
-        // FFmpeg command:
-        // -hide_banner -loglevel error: reduce noise
-        // -ss before -i: fast seek
-        // -frames:v 1: extract only 1 frame
-        // -vf scale: resize maintaining aspect ratio
-        // -q:v: JPEG quality (2=best, 31=worst)
-        // NO 2>&1: keep stdout/stderr separate
-        $command = sprintf(
-            'ffmpeg -hide_banner -loglevel error -ss %s -i %s -frames:v 1 -vf "scale=%d:%d:force_original_aspect_ratio=decrease" -q:v %d -y %s',
-            escapeshellarg(sprintf('%.3f', $timestamp)),
-            escapeshellarg($videoPath),
-            $maxWidth,
-            $maxHeight,
-            self::JPEG_QUALITY,
-            escapeshellarg($tmpOutputPath)
-        );
+        try {
+            // FFmpeg arguments:
+            // -nostdin: don't read from stdin (prevents hangs in backend context)
+            // -hide_banner -loglevel error: reduce noise
+            // -ss before -i: fast seek
+            // -an -sn: ignore audio and subtitle streams
+            // -frames:v 1: extract only 1 frame
+            // -vf scale with out_range=pc (full/JPEG range) + format=yuv420p
+            //     (avoids "deprecated pixel format" warnings on newer ffmpeg)
+            // -q:v: JPEG quality (2=best, 31=worst)
+            $result = $this->processRunner->runArray([
+                'ffmpeg',
+                '-nostdin',
+                '-hide_banner',
+                '-loglevel', 'error',
+                '-ss', sprintf('%.3f', $timestamp),
+                '-i', $videoPath,
+                '-an',
+                '-sn',
+                '-frames:v', '1',
+                '-vf', sprintf('scale=%d:%d:force_original_aspect_ratio=decrease:out_range=pc,format=yuv420p', $maxWidth, $maxHeight),
+                '-q:v', (string) self::JPEG_QUALITY,
+                '-y',
+                $tmpOutputPath,
+            ], self::TIMEOUT_SECONDS);
 
-        $result = $this->processRunner->run($command, self::TIMEOUT_SECONDS);
+            if (!$result->isSuccessful()) {
+                $this->logger->warning('FFmpeg frame extraction failed', [
+                    'video' => $videoPath,
+                    'timestamp' => $timestamp,
+                    'exit_code' => $result->exitCode,
+                    'stdout' => $result->stdout,
+                    'stderr' => $result->stderr,
+                ]);
 
-        if (!$result->isSuccessful()) {
-            $this->logger->warning('FFmpeg frame extraction failed', [
-                'video' => $videoPath,
-                'timestamp' => $timestamp,
-                'exit_code' => $result->exitCode,
-                'stdout' => $result->stdout,
-                'stderr' => $result->stderr,
-            ]);
+                throw new RuntimeException('FFmpeg failed to extract frame: '.$result->getOutput());
+            }
 
-            // Clean up temp file on failure
+            if (!file_exists($tmpOutputPath)) {
+                throw new RuntimeException('FFmpeg did not produce a thumbnail');
+            }
+
+            // Atomic rename (same filesystem)
+            if (!rename($tmpOutputPath, $outputPath)) {
+                throw new RuntimeException('Failed to move temporary thumbnail into place');
+            }
+        } finally {
+            // Guaranteed cleanup of temp file
             if (file_exists($tmpOutputPath)) {
                 unlink($tmpOutputPath);
             }
-
-            throw new RuntimeException('FFmpeg failed to extract frame: '.$result->getOutput());
-        }
-
-        if (!file_exists($tmpOutputPath)) {
-            throw new RuntimeException('FFmpeg did not produce a thumbnail');
-        }
-
-        // Atomic rename (same filesystem)
-        if (!rename($tmpOutputPath, $outputPath)) {
-            unlink($tmpOutputPath);
-
-            throw new RuntimeException('Failed to move temporary thumbnail into place');
         }
     }
 

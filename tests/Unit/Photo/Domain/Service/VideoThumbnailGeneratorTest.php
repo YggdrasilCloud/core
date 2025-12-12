@@ -96,7 +96,7 @@ final class VideoThumbnailGeneratorTest extends TestCase
     {
         // ProcessRunner should NEVER be called if thumbnail exists
         $processRunner = $this->createMock(ProcessRunner::class);
-        $processRunner->expects(self::never())->method('run');
+        $processRunner->expects(self::never())->method('runArray');
 
         $generator = $this->createGenerator($processRunner);
 
@@ -128,26 +128,36 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command, int $timeout) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(function (array $args, int $timeout) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
+                    self::assertSame([
+                        'ffprobe',
+                        '-v', 'error',
+                        '-print_format', 'json',
+                        '-show_entries', 'format=duration',
+                        $this->tempDir.'/test.mp4',
+                    ], $args);
+
                     return $ffprobeResult;
                 }
 
-                // Verify ffmpeg command structure
-                self::assertStringContainsString('ffmpeg', $command);
-                self::assertStringContainsString('-frames:v 1', $command);
-                self::assertStringContainsString('scale=300:300', $command);
-                self::assertStringContainsString('-q:v 2', $command);
-                // Verify timestamp is 10% of 30s = 3.05s (but capped at 5s)
-                self::assertStringContainsString('-ss', $command);
+                // Verify ffmpeg arguments
+                self::assertSame('ffmpeg', $args[0]);
+                self::assertContains('-nostdin', $args);
+                self::assertContains('-an', $args);
+                self::assertContains('-sn', $args);
+                self::assertContains('-frames:v', $args);
+                self::assertContains('1', $args);
+                self::assertContains('-vf', $args);
+                self::assertContains('scale=300:300:force_original_aspect_ratio=decrease:out_range=pc,format=yuv420p', $args);
+                self::assertContains('-q:v', $args);
+                self::assertContains('2', $args);
+                self::assertContains('-ss', $args);
 
                 // Simulate ffmpeg creating the thumbnail file
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -173,19 +183,17 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::once())
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffmpegResult): ProcessResult {
-                self::assertStringContainsString('ffmpeg', $command);
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffmpegResult): ProcessResult {
+                self::assertSame('ffmpeg', $args[0]);
                 // Should use 1.0s fallback timestamp
-                self::assertStringContainsString('-ss', $command);
-                self::assertStringContainsString('1.000', $command);
+                $ssIndex = array_search('-ss', $args, true);
+                self::assertIsInt($ssIndex);
+                self::assertSame('1.000', $args[$ssIndex + 1]);
 
                 // Simulate ffmpeg creating the thumbnail file
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -212,20 +220,19 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
                     return $ffprobeResult;
                 }
 
                 // Should use 1.0s fallback for short videos
-                self::assertStringContainsString('1.000', $command);
+                $ssIndex = array_search('-ss', $args, true);
+                self::assertIsInt($ssIndex);
+                self::assertSame('1.000', $args[$ssIndex + 1]);
 
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -248,20 +255,19 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
                     return $ffprobeResult;
                 }
 
                 // Should be capped at 5.0s (not 10.0s which is 10% of 100s)
-                self::assertStringContainsString('5.000', $command);
+                $ssIndex = array_search('-ss', $args, true);
+                self::assertIsInt($ssIndex);
+                self::assertSame('5.000', $args[$ssIndex + 1]);
 
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -283,8 +289,8 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(1, '', 'Error processing video');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static fn (string $command) => str_contains($command, 'ffprobe')
+            ->method('runArray')
+            ->willReturnCallback(static fn (array $args) => $args[0] === 'ffprobe'
                 ? $ffprobeResult
                 : $ffmpegResult)
         ;
@@ -309,8 +315,8 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static fn (string $command) => str_contains($command, 'ffprobe')
+            ->method('runArray')
+            ->willReturnCallback(static fn (array $args) => $args[0] === 'ffprobe'
                 ? $ffprobeResult
                 : $ffmpegResult)
         ;
@@ -413,17 +419,14 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
                     return $ffprobeResult;
                 }
 
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -449,22 +452,19 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
                     return $ffprobeResult;
                 }
 
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    // Create parent directory if needed
-                    $dir = dirname($tmpPath);
-                    if (!is_dir($dir)) {
-                        mkdir($dir, 0755, true);
-                    }
-                    file_put_contents($tmpPath, 'generated thumbnail');
+                $tmpPath = end($args);
+                // Create parent directory if needed
+                $dir = dirname($tmpPath);
+                if (!is_dir($dir)) {
+                    mkdir($dir, 0755, true);
                 }
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -493,20 +493,19 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
                     return $ffprobeResult;
                 }
 
                 // Should use 3.0s (10% of 30s)
-                self::assertStringContainsString('3.000', $command);
+                $ssIndex = array_search('-ss', $args, true);
+                self::assertIsInt($ssIndex);
+                self::assertSame('3.000', $args[$ssIndex + 1]);
 
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -524,25 +523,24 @@ final class VideoThumbnailGeneratorTest extends TestCase
     {
         $processRunner = $this->createMock(ProcessRunner::class);
 
-        // ffprobe returns exactly 10s video - should use 1.0s fallback (since < 10 is boundary)
+        // ffprobe returns exactly 10s video - should use 10% = 1.0s
         $ffprobeResult = new ProcessResult(0, '{"format":{"duration":"10.0"}}', '');
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
                     return $ffprobeResult;
                 }
 
                 // Exactly 10s should use 10% = 1.0s
-                self::assertStringContainsString('1.000', $command);
+                $ssIndex = array_search('-ss', $args, true);
+                self::assertIsInt($ssIndex);
+                self::assertSame('1.000', $args[$ssIndex + 1]);
 
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -565,20 +563,19 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
                     return $ffprobeResult;
                 }
 
                 // Should use 1.0s fallback since ffprobe failed
-                self::assertStringContainsString('1.000', $command);
+                $ssIndex = array_search('-ss', $args, true);
+                self::assertIsInt($ssIndex);
+                self::assertSame('1.000', $args[$ssIndex + 1]);
 
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -603,20 +600,19 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
                     return $ffprobeResult;
                 }
 
                 // Should use 1.0s fallback since ffprobe returned invalid JSON
-                self::assertStringContainsString('1.000', $command);
+                $ssIndex = array_search('-ss', $args, true);
+                self::assertIsInt($ssIndex);
+                self::assertSame('1.000', $args[$ssIndex + 1]);
 
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -639,20 +635,19 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
                     return $ffprobeResult;
                 }
 
                 // Should use 1.0s fallback
-                self::assertStringContainsString('1.000', $command);
+                $ssIndex = array_search('-ss', $args, true);
+                self::assertIsInt($ssIndex);
+                self::assertSame('1.000', $args[$ssIndex + 1]);
 
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -675,20 +670,19 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
                     return $ffprobeResult;
                 }
 
                 // Should use 1.0s fallback
-                self::assertStringContainsString('1.000', $command);
+                $ssIndex = array_search('-ss', $args, true);
+                self::assertIsInt($ssIndex);
+                self::assertSame('1.000', $args[$ssIndex + 1]);
 
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -711,20 +705,19 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
                     return $ffprobeResult;
                 }
 
                 // Should use 1.0s fallback
-                self::assertStringContainsString('1.000', $command);
+                $ssIndex = array_search('-ss', $args, true);
+                self::assertIsInt($ssIndex);
+                self::assertSame('1.000', $args[$ssIndex + 1]);
 
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -746,20 +739,17 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
                     return $ffprobeResult;
                 }
 
                 // Verify custom dimensions are used
-                self::assertStringContainsString('scale=200:150', $command);
+                self::assertContains('scale=200:150:force_original_aspect_ratio=decrease:out_range=pc,format=yuv420p', $args);
 
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -781,17 +771,14 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
                     return $ffprobeResult;
                 }
 
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
@@ -816,17 +803,14 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $ffmpegResult = new ProcessResult(0, '', '');
 
         $processRunner->expects(self::exactly(2))
-            ->method('run')
-            ->willReturnCallback(static function (string $command) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if (str_contains($command, 'ffprobe')) {
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+                if ($args[0] === 'ffprobe') {
                     return $ffprobeResult;
                 }
 
-                $matches = [];
-                if (preg_match('/([^\s]+\.tmp)/', $command, $matches)) {
-                    $tmpPath = trim($matches[1], "'\"");
-                    file_put_contents($tmpPath, 'generated thumbnail');
-                }
+                $tmpPath = end($args);
+                file_put_contents($tmpPath, 'generated thumbnail');
 
                 return $ffmpegResult;
             })
