@@ -12,7 +12,7 @@ use App\Photo\Domain\Model\UserId;
 use App\Photo\Infrastructure\Persistence\Doctrine\Entity\PhotoEntity;
 use ReflectionClass;
 
-final class PhotoMapper
+final readonly class PhotoMapper
 {
     public static function toEntity(Photo $photo): PhotoEntity
     {

@@ -18,7 +18,7 @@ use function sprintf;
  * - Captured stdout/stderr output
  * - Consistent API via ProcessResult
  */
-class ProcessRunner
+final readonly class ProcessRunner
 {
     private const int DEFAULT_TIMEOUT_SECONDS = 5;
 
