@@ -11,7 +11,7 @@ use App\Photo\Domain\Model\UserId;
 use App\Photo\Infrastructure\Persistence\Doctrine\Entity\FolderEntity;
 use ReflectionClass;
 
-final class FolderMapper
+final readonly class FolderMapper
 {
     public static function toEntity(Folder $folder): FolderEntity
     {
