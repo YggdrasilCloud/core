@@ -34,7 +34,7 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testSupportsVideoMimeTypes(): void
     {
-        $generator = $this->createGenerator($this->createMock(ProcessRunner::class));
+        $generator = $this->createGenerator();
 
         self::assertTrue($generator->supports('video/mp4'));
         self::assertTrue($generator->supports('video/webm'));
@@ -45,7 +45,7 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testValidatePathRejectsDirectoryTraversal(): void
     {
-        $generator = $this->createGenerator($this->createMock(ProcessRunner::class));
+        $generator = $this->createGenerator();
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('directory traversal');
@@ -55,10 +55,7 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailThrowsWhenFfmpegUnavailable(): void
     {
-        $generator = $this->createGenerator(
-            $this->createMock(ProcessRunner::class),
-            ffmpegAvailable: false,
-        );
+        $generator = $this->createGenerator(ffmpegAvailable: false);
 
         // Create a dummy video file
         $videoPath = $this->tempDir.'/test.mp4';
@@ -72,7 +69,7 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailThrowsForMissingFile(): void
     {
-        $generator = $this->createGenerator($this->createMock(ProcessRunner::class));
+        $generator = $this->createGenerator();
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('not found');
@@ -82,7 +79,7 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailThrowsForOversizedFile(): void
     {
-        $generator = $this->createGenerator($this->createMock(ProcessRunner::class));
+        $generator = $this->createGenerator();
 
         // We can't create a 500MB file, so we use a mock generator that overrides the check
         // For now, just verify the file exists check works
@@ -94,11 +91,17 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testIdempotenceSkipsExistingThumbnail(): void
     {
-        // ProcessRunner should NEVER be called if thumbnail exists
-        $processRunner = $this->createMock(ProcessRunner::class);
-        $processRunner->expects(self::never())->method('runArray');
+        // When thumbnail exists, ffprobe/ffmpeg should NOT be called
+        $ffmpegCalled = false;
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args) use (&$ffmpegCalled): ProcessResult {
+                if ($args[0] === 'ffprobe' || $args[0] === 'ffmpeg') {
+                    $ffmpegCalled = true;
+                }
 
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         // Pre-create the thumbnail
         $thumbnailDir = $this->tempDir.'/thumbs';
@@ -115,22 +118,18 @@ final class VideoThumbnailGeneratorTest extends TestCase
         self::assertSame('thumbs/test_thumb.jpg', $result);
         // Content should be unchanged (idempotent)
         self::assertSame('existing thumbnail', file_get_contents($thumbnailPath));
+        self::assertFalse($ffmpegCalled, 'ffprobe/ffmpeg should not be called when thumbnail exists');
     }
 
     public function testGenerateThumbnailCallsFfmpegWithCorrectParameters(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
+        $ffprobeCalled = false;
+        $ffmpegCalled = false;
 
-        // Expect ffprobe call for duration (returns 30s video)
-        $ffprobeResult = new ProcessResult(0, '{"format":{"duration":"30.5"}}', '');
-
-        // Expect ffmpeg call for frame extraction
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(function (array $args, int $timeout) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+        $generator = $this->createGenerator(
+            runArrayCallback: function (array $args, int $timeout) use (&$ffprobeCalled, &$ffmpegCalled): ProcessResult {
                 if ($args[0] === 'ffprobe') {
+                    $ffprobeCalled = true;
                     self::assertSame([
                         'ffprobe',
                         '-v', 'error',
@@ -139,31 +138,33 @@ final class VideoThumbnailGeneratorTest extends TestCase
                         $this->tempDir.'/test.mp4',
                     ], $args);
 
-                    return $ffprobeResult;
+                    return new ProcessResult(0, '{"format":{"duration":"30.5"}}', '');
                 }
 
-                // Verify ffmpeg arguments
-                self::assertSame('ffmpeg', $args[0]);
-                self::assertContains('-nostdin', $args);
-                self::assertContains('-an', $args);
-                self::assertContains('-sn', $args);
-                self::assertContains('-frames:v', $args);
-                self::assertContains('1', $args);
-                self::assertContains('-vf', $args);
-                self::assertContains('scale=300:300:force_original_aspect_ratio=decrease:out_range=pc,format=yuv420p', $args);
-                self::assertContains('-q:v', $args);
-                self::assertContains('2', $args);
-                self::assertContains('-ss', $args);
+                if ($args[0] === 'ffmpeg') {
+                    $ffmpegCalled = true;
+                    // Verify ffmpeg arguments
+                    self::assertContains('-nostdin', $args);
+                    self::assertContains('-an', $args);
+                    self::assertContains('-sn', $args);
+                    self::assertContains('-frames:v', $args);
+                    self::assertContains('1', $args);
+                    self::assertContains('-vf', $args);
+                    self::assertContains('scale=300:300:force_original_aspect_ratio=decrease:out_range=pc,format=yuv420p', $args);
+                    self::assertContains('-q:v', $args);
+                    self::assertContains('2', $args);
+                    self::assertContains('-ss', $args);
 
-                // Simulate ffmpeg creating the thumbnail file
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
+                    // Simulate ffmpeg creating the thumbnail file
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
 
-                return $ffmpegResult;
-            })
-        ;
+                    return new ProcessResult(0, '', '');
+                }
 
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         // Create source file
         $videoPath = $this->tempDir.'/test.mp4';
@@ -173,34 +174,33 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
         self::assertSame('thumbs/test_thumb.jpg', $result);
         self::assertFileExists($this->tempDir.'/thumbs/test_thumb.jpg');
+        self::assertTrue($ffprobeCalled, 'ffprobe should be called');
+        self::assertTrue($ffmpegCalled, 'ffmpeg should be called');
     }
 
     public function testGenerateThumbnailUsesFallbackTimestampWhenFfprobeUnavailable(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
-
-        // Only ffmpeg should be called (no ffprobe)
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::once())
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffmpegResult): ProcessResult {
-                self::assertSame('ffmpeg', $args[0]);
-                // Should use 1.0s fallback timestamp
-                $ssIndex = array_search('-ss', $args, true);
-                self::assertIsInt($ssIndex);
-                self::assertSame('1.000', $args[$ssIndex + 1]);
-
-                // Simulate ffmpeg creating the thumbnail file
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
-
-                return $ffmpegResult;
-            })
-        ;
+        $ffmpegCalled = false;
 
         // ffprobe unavailable
-        $generator = $this->createGenerator($processRunner, ffprobeAvailable: false);
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args) use (&$ffmpegCalled): ProcessResult {
+                if ($args[0] === 'ffmpeg') {
+                    $ffmpegCalled = true;
+                    // Should use 1.0s fallback timestamp
+                    $ssIndex = array_search('-ss', $args, true);
+                    self::assertIsInt($ssIndex);
+                    self::assertSame('1.000', $args[$ssIndex + 1]);
+
+                    // Simulate ffmpeg creating the thumbnail file
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
+                }
+
+                return new ProcessResult(0, '', '');
+            },
+            ffprobeAvailable: false,
+        );
 
         // Create source file
         $videoPath = $this->tempDir.'/test.mp4';
@@ -209,36 +209,30 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $result = $generator->generateThumbnail('test.mp4');
 
         self::assertSame('thumbs/test_thumb.jpg', $result);
+        self::assertTrue($ffmpegCalled, 'ffmpeg should be called');
     }
 
     public function testGenerateThumbnailUsesFallbackTimestampForShortVideo(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
-
-        // ffprobe returns short duration (< 10s)
-        $ffprobeResult = new ProcessResult(0, '{"format":{"duration":"5.0"}}', '');
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
                 if ($args[0] === 'ffprobe') {
-                    return $ffprobeResult;
+                    return new ProcessResult(0, '{"format":{"duration":"5.0"}}', '');
                 }
 
-                // Should use 1.0s fallback for short videos
-                $ssIndex = array_search('-ss', $args, true);
-                self::assertIsInt($ssIndex);
-                self::assertSame('1.000', $args[$ssIndex + 1]);
+                if ($args[0] === 'ffmpeg') {
+                    // Should use 1.0s fallback for short videos
+                    $ssIndex = array_search('-ss', $args, true);
+                    self::assertIsInt($ssIndex);
+                    self::assertSame('1.000', $args[$ssIndex + 1]);
 
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
+                }
 
-                return $ffmpegResult;
-            })
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         $videoPath = $this->tempDir.'/test.mp4';
         file_put_contents($videoPath, 'fake video');
@@ -248,32 +242,25 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailCapsTimestampAt5Seconds(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
-
-        // ffprobe returns very long video (100s, 10% would be 10s but should cap at 5s)
-        $ffprobeResult = new ProcessResult(0, '{"format":{"duration":"100.0"}}', '');
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
                 if ($args[0] === 'ffprobe') {
-                    return $ffprobeResult;
+                    return new ProcessResult(0, '{"format":{"duration":"100.0"}}', '');
                 }
 
-                // Should be capped at 5.0s (not 10.0s which is 10% of 100s)
-                $ssIndex = array_search('-ss', $args, true);
-                self::assertIsInt($ssIndex);
-                self::assertSame('5.000', $args[$ssIndex + 1]);
+                if ($args[0] === 'ffmpeg') {
+                    // Should be capped at 5.0s (not 10.0s which is 10% of 100s)
+                    $ssIndex = array_search('-ss', $args, true);
+                    self::assertIsInt($ssIndex);
+                    self::assertSame('5.000', $args[$ssIndex + 1]);
 
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
+                }
 
-                return $ffmpegResult;
-            })
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         $videoPath = $this->tempDir.'/test.mp4';
         file_put_contents($videoPath, 'fake video');
@@ -283,19 +270,19 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailThrowsOnFfmpegFailure(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
+                if ($args[0] === 'ffprobe') {
+                    return new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
+                }
 
-        $ffprobeResult = new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
-        $ffmpegResult = new ProcessResult(1, '', 'Error processing video');
+                if ($args[0] === 'ffmpeg') {
+                    return new ProcessResult(1, '', 'Error processing video');
+                }
 
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static fn (array $args) => $args[0] === 'ffprobe'
-                ? $ffprobeResult
-                : $ffmpegResult)
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         $videoPath = $this->tempDir.'/test.mp4';
         file_put_contents($videoPath, 'fake video');
@@ -308,20 +295,16 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailThrowsWhenNoOutputProduced(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
+                if ($args[0] === 'ffprobe') {
+                    return new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
+                }
 
-        $ffprobeResult = new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
-        // FFmpeg succeeds but doesn't produce output
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static fn (array $args) => $args[0] === 'ffprobe'
-                ? $ffprobeResult
-                : $ffmpegResult)
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                // FFmpeg succeeds but doesn't produce output
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         $videoPath = $this->tempDir.'/test.mp4';
         file_put_contents($videoPath, 'fake video');
@@ -334,7 +317,7 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testDeleteThumbnailRemovesFile(): void
     {
-        $generator = $this->createGenerator($this->createMock(ProcessRunner::class));
+        $generator = $this->createGenerator();
 
         $thumbnailPath = $this->tempDir.'/thumbs/video_thumb.jpg';
         file_put_contents($thumbnailPath, 'thumbnail content');
@@ -348,7 +331,7 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testDeleteThumbnailHandlesNonexistent(): void
     {
-        $generator = $this->createGenerator($this->createMock(ProcessRunner::class));
+        $generator = $this->createGenerator();
 
         // Should not throw
         $generator->deleteThumbnail('thumbs/nonexistent.jpg');
@@ -358,7 +341,7 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testDeleteThumbnailRejectsDirectoryTraversal(): void
     {
-        $generator = $this->createGenerator($this->createMock(ProcessRunner::class));
+        $generator = $this->createGenerator();
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('directory traversal');
@@ -369,7 +352,7 @@ final class VideoThumbnailGeneratorTest extends TestCase
     #[DataProvider('provideSupportedMimeTypesCases')]
     public function testSupportedMimeTypes(string $mimeType, bool $expected): void
     {
-        $generator = $this->createGenerator($this->createMock(ProcessRunner::class));
+        $generator = $this->createGenerator();
 
         self::assertSame($expected, $generator->supports($mimeType));
     }
@@ -398,14 +381,8 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testIsAvailableReturnsFfmpegStatus(): void
     {
-        $generatorAvailable = $this->createGenerator(
-            $this->createMock(ProcessRunner::class),
-            ffmpegAvailable: true,
-        );
-        $generatorUnavailable = $this->createGenerator(
-            $this->createMock(ProcessRunner::class),
-            ffmpegAvailable: false,
-        );
+        $generatorAvailable = $this->createGenerator(ffmpegAvailable: true);
+        $generatorUnavailable = $this->createGenerator(ffmpegAvailable: false);
 
         self::assertTrue($generatorAvailable->isAvailable());
         self::assertFalse($generatorUnavailable->isAvailable());
@@ -413,26 +390,20 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailHandlesAbsolutePath(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
-
-        $ffprobeResult = new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
                 if ($args[0] === 'ffprobe') {
-                    return $ffprobeResult;
+                    return new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
                 }
 
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
+                if ($args[0] === 'ffmpeg') {
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
+                }
 
-                return $ffmpegResult;
-            })
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         // Create source file with absolute path
         $videoPath = $this->tempDir.'/test.mp4';
@@ -446,31 +417,25 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailCreatesNestedDirectories(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
-
-        $ffprobeResult = new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
                 if ($args[0] === 'ffprobe') {
-                    return $ffprobeResult;
+                    return new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
                 }
 
-                $tmpPath = end($args);
-                // Create parent directory if needed
-                $dir = dirname($tmpPath);
-                if (!is_dir($dir)) {
-                    mkdir($dir, 0755, true);
+                if ($args[0] === 'ffmpeg') {
+                    $tmpPath = end($args);
+                    // Create parent directory if needed
+                    $dir = dirname($tmpPath);
+                    if (!is_dir($dir)) {
+                        mkdir($dir, 0755, true);
+                    }
+                    file_put_contents($tmpPath, 'generated thumbnail');
                 }
-                file_put_contents($tmpPath, 'generated thumbnail');
 
-                return $ffmpegResult;
-            })
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         // Create nested source file
         $nestedDir = $this->tempDir.'/subdir/nested';
@@ -486,32 +451,25 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailUses10PercentTimestampForMediumVideo(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
-
-        // ffprobe returns 30s video - 10% should be 3.0s
-        $ffprobeResult = new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
                 if ($args[0] === 'ffprobe') {
-                    return $ffprobeResult;
+                    return new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
                 }
 
-                // Should use 3.0s (10% of 30s)
-                $ssIndex = array_search('-ss', $args, true);
-                self::assertIsInt($ssIndex);
-                self::assertSame('3.000', $args[$ssIndex + 1]);
+                if ($args[0] === 'ffmpeg') {
+                    // Should use 3.0s (10% of 30s)
+                    $ssIndex = array_search('-ss', $args, true);
+                    self::assertIsInt($ssIndex);
+                    self::assertSame('3.000', $args[$ssIndex + 1]);
 
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
+                }
 
-                return $ffmpegResult;
-            })
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         $videoPath = $this->tempDir.'/test.mp4';
         file_put_contents($videoPath, 'fake video');
@@ -521,32 +479,25 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailUsesFallbackForExactly10SecondVideo(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
-
-        // ffprobe returns exactly 10s video - should use 10% = 1.0s
-        $ffprobeResult = new ProcessResult(0, '{"format":{"duration":"10.0"}}', '');
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
                 if ($args[0] === 'ffprobe') {
-                    return $ffprobeResult;
+                    return new ProcessResult(0, '{"format":{"duration":"10.0"}}', '');
                 }
 
-                // Exactly 10s should use 10% = 1.0s
-                $ssIndex = array_search('-ss', $args, true);
-                self::assertIsInt($ssIndex);
-                self::assertSame('1.000', $args[$ssIndex + 1]);
+                if ($args[0] === 'ffmpeg') {
+                    // Exactly 10s should use 10% = 1.0s
+                    $ssIndex = array_search('-ss', $args, true);
+                    self::assertIsInt($ssIndex);
+                    self::assertSame('1.000', $args[$ssIndex + 1]);
 
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
+                }
 
-                return $ffmpegResult;
-            })
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         $videoPath = $this->tempDir.'/test.mp4';
         file_put_contents($videoPath, 'fake video');
@@ -556,32 +507,25 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailHandlesFfprobeFailure(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
-
-        // ffprobe fails, ffmpeg should still work with fallback timestamp
-        $ffprobeResult = new ProcessResult(1, '', 'ffprobe error');
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
                 if ($args[0] === 'ffprobe') {
-                    return $ffprobeResult;
+                    return new ProcessResult(1, '', 'ffprobe error');
                 }
 
-                // Should use 1.0s fallback since ffprobe failed
-                $ssIndex = array_search('-ss', $args, true);
-                self::assertIsInt($ssIndex);
-                self::assertSame('1.000', $args[$ssIndex + 1]);
+                if ($args[0] === 'ffmpeg') {
+                    // Should use 1.0s fallback since ffprobe failed
+                    $ssIndex = array_search('-ss', $args, true);
+                    self::assertIsInt($ssIndex);
+                    self::assertSame('1.000', $args[$ssIndex + 1]);
 
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
+                }
 
-                return $ffmpegResult;
-            })
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         $videoPath = $this->tempDir.'/test.mp4';
         file_put_contents($videoPath, 'fake video');
@@ -593,32 +537,25 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailHandlesFfprobeInvalidJson(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
-
-        // ffprobe returns invalid JSON
-        $ffprobeResult = new ProcessResult(0, 'not json', '');
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
                 if ($args[0] === 'ffprobe') {
-                    return $ffprobeResult;
+                    return new ProcessResult(0, 'not json', '');
                 }
 
-                // Should use 1.0s fallback since ffprobe returned invalid JSON
-                $ssIndex = array_search('-ss', $args, true);
-                self::assertIsInt($ssIndex);
-                self::assertSame('1.000', $args[$ssIndex + 1]);
+                if ($args[0] === 'ffmpeg') {
+                    // Should use 1.0s fallback since ffprobe returned invalid JSON
+                    $ssIndex = array_search('-ss', $args, true);
+                    self::assertIsInt($ssIndex);
+                    self::assertSame('1.000', $args[$ssIndex + 1]);
 
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
+                }
 
-                return $ffmpegResult;
-            })
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         $videoPath = $this->tempDir.'/test.mp4';
         file_put_contents($videoPath, 'fake video');
@@ -628,32 +565,25 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailHandlesFfprobeMissingFormat(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
-
-        // ffprobe returns JSON but without format
-        $ffprobeResult = new ProcessResult(0, '{}', '');
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
                 if ($args[0] === 'ffprobe') {
-                    return $ffprobeResult;
+                    return new ProcessResult(0, '{}', '');
                 }
 
-                // Should use 1.0s fallback
-                $ssIndex = array_search('-ss', $args, true);
-                self::assertIsInt($ssIndex);
-                self::assertSame('1.000', $args[$ssIndex + 1]);
+                if ($args[0] === 'ffmpeg') {
+                    // Should use 1.0s fallback
+                    $ssIndex = array_search('-ss', $args, true);
+                    self::assertIsInt($ssIndex);
+                    self::assertSame('1.000', $args[$ssIndex + 1]);
 
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
+                }
 
-                return $ffmpegResult;
-            })
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         $videoPath = $this->tempDir.'/test.mp4';
         file_put_contents($videoPath, 'fake video');
@@ -663,32 +593,25 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailHandlesFfprobeMissingDuration(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
-
-        // ffprobe returns JSON with format but without duration
-        $ffprobeResult = new ProcessResult(0, '{"format":{}}', '');
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
                 if ($args[0] === 'ffprobe') {
-                    return $ffprobeResult;
+                    return new ProcessResult(0, '{"format":{}}', '');
                 }
 
-                // Should use 1.0s fallback
-                $ssIndex = array_search('-ss', $args, true);
-                self::assertIsInt($ssIndex);
-                self::assertSame('1.000', $args[$ssIndex + 1]);
+                if ($args[0] === 'ffmpeg') {
+                    // Should use 1.0s fallback
+                    $ssIndex = array_search('-ss', $args, true);
+                    self::assertIsInt($ssIndex);
+                    self::assertSame('1.000', $args[$ssIndex + 1]);
 
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
+                }
 
-                return $ffmpegResult;
-            })
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         $videoPath = $this->tempDir.'/test.mp4';
         file_put_contents($videoPath, 'fake video');
@@ -698,32 +621,25 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailHandlesFfprobeNonNumericDuration(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
-
-        // ffprobe returns non-numeric duration
-        $ffprobeResult = new ProcessResult(0, '{"format":{"duration":"N/A"}}', '');
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
                 if ($args[0] === 'ffprobe') {
-                    return $ffprobeResult;
+                    return new ProcessResult(0, '{"format":{"duration":"N/A"}}', '');
                 }
 
-                // Should use 1.0s fallback
-                $ssIndex = array_search('-ss', $args, true);
-                self::assertIsInt($ssIndex);
-                self::assertSame('1.000', $args[$ssIndex + 1]);
+                if ($args[0] === 'ffmpeg') {
+                    // Should use 1.0s fallback
+                    $ssIndex = array_search('-ss', $args, true);
+                    self::assertIsInt($ssIndex);
+                    self::assertSame('1.000', $args[$ssIndex + 1]);
 
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
+                }
 
-                return $ffmpegResult;
-            })
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         $videoPath = $this->tempDir.'/test.mp4';
         file_put_contents($videoPath, 'fake video');
@@ -733,29 +649,23 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailUsesCustomDimensions(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
-
-        $ffprobeResult = new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
                 if ($args[0] === 'ffprobe') {
-                    return $ffprobeResult;
+                    return new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
                 }
 
-                // Verify custom dimensions are used
-                self::assertContains('scale=200:150:force_original_aspect_ratio=decrease:out_range=pc,format=yuv420p', $args);
+                if ($args[0] === 'ffmpeg') {
+                    // Verify custom dimensions are used
+                    self::assertContains('scale=200:150:force_original_aspect_ratio=decrease:out_range=pc,format=yuv420p', $args);
 
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
+                }
 
-                return $ffmpegResult;
-            })
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         $videoPath = $this->tempDir.'/test.mp4';
         file_put_contents($videoPath, 'fake video');
@@ -765,26 +675,20 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailWithFileAtRootLevel(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
-
-        $ffprobeResult = new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
+        $generator = $this->createGenerator(
+            runArrayCallback: static function (array $args): ProcessResult {
                 if ($args[0] === 'ffprobe') {
-                    return $ffprobeResult;
+                    return new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
                 }
 
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
+                if ($args[0] === 'ffmpeg') {
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
+                }
 
-                return $ffmpegResult;
-            })
-        ;
-
-        $generator = $this->createGenerator($processRunner);
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         $videoPath = $this->tempDir.'/root_video.mp4';
         file_put_contents($videoPath, 'fake video');
@@ -796,25 +700,7 @@ final class VideoThumbnailGeneratorTest extends TestCase
 
     public function testGenerateThumbnailLogsSuccessWithCorrectData(): void
     {
-        $processRunner = $this->createMock(ProcessRunner::class);
         $logger = $this->createMock(LoggerInterface::class);
-
-        $ffprobeResult = new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
-        $ffmpegResult = new ProcessResult(0, '', '');
-
-        $processRunner->expects(self::exactly(2))
-            ->method('runArray')
-            ->willReturnCallback(static function (array $args) use ($ffprobeResult, $ffmpegResult): ProcessResult {
-                if ($args[0] === 'ffprobe') {
-                    return $ffprobeResult;
-                }
-
-                $tmpPath = end($args);
-                file_put_contents($tmpPath, 'generated thumbnail');
-
-                return $ffmpegResult;
-            })
-        ;
 
         // Verify logger is called with correct parameters
         $logger->expects(self::once())
@@ -828,7 +714,21 @@ final class VideoThumbnailGeneratorTest extends TestCase
             )
         ;
 
-        $generator = $this->createGeneratorWithLogger($processRunner, $logger);
+        $generator = $this->createGeneratorWithLogger(
+            $logger,
+            runArrayCallback: static function (array $args): ProcessResult {
+                if ($args[0] === 'ffprobe') {
+                    return new ProcessResult(0, '{"format":{"duration":"30.0"}}', '');
+                }
+
+                if ($args[0] === 'ffmpeg') {
+                    $tmpPath = end($args);
+                    file_put_contents($tmpPath, 'generated thumbnail');
+                }
+
+                return new ProcessResult(0, '', '');
+            },
+        );
 
         $videoPath = $this->tempDir.'/test.mp4';
         file_put_contents($videoPath, 'fake video');
@@ -836,40 +736,63 @@ final class VideoThumbnailGeneratorTest extends TestCase
         $generator->generateThumbnail('test.mp4');
     }
 
+    /**
+     * Creates a VideoThumbnailGenerator with a pre-configured ProcessRunner mock.
+     *
+     * @param null|callable $runArrayCallback Custom callback for runArray method (receives args, timeout)
+     */
     private function createGenerator(
-        ProcessRunner $processRunner,
+        ?callable $runArrayCallback = null,
         bool $ffmpegAvailable = true,
         bool $ffprobeAvailable = true,
     ): VideoThumbnailGenerator {
-        return $this->createGeneratorWithLogger($processRunner, new NullLogger(), $ffmpegAvailable, $ffprobeAvailable);
+        return $this->createGeneratorWithLogger(new NullLogger(), $runArrayCallback, $ffmpegAvailable, $ffprobeAvailable);
     }
 
+    /**
+     * Creates a VideoThumbnailGenerator with a custom logger.
+     *
+     * @param null|callable $runArrayCallback Custom callback for runArray method
+     */
     private function createGeneratorWithLogger(
-        ProcessRunner $processRunner,
         LoggerInterface $logger,
+        ?callable $runArrayCallback = null,
         bool $ffmpegAvailable = true,
         bool $ffprobeAvailable = true,
     ): VideoThumbnailGenerator {
-        return new class($this->tempDir, $logger, $processRunner, $ffmpegAvailable, $ffprobeAvailable) extends VideoThumbnailGenerator {
-            public function __construct(
-                string $storagePath,
-                LoggerInterface $logger,
-                ProcessRunner $processRunner,
-                private readonly bool $ffmpegAvailableOverride,
-                private readonly bool $ffprobeAvailableOverride,
-            ) {
-                parent::__construct($storagePath, $logger, $processRunner);
-            }
+        /** @phpstan-ignore method.unresolvableReturnType (BypassFinals allows mocking final classes) */
+        $processRunner = $this->createMock(ProcessRunner::class);
 
-            protected function isCommandAvailable(string $command): bool
-            {
-                return match ($command) {
-                    'ffmpeg' => $this->ffmpegAvailableOverride,
-                    'ffprobe' => $this->ffprobeAvailableOverride,
-                    default => false,
-                };
-            }
-        };
+        // Configure runArray to handle both availability checks and actual commands
+        $processRunner
+            ->method('runArray')
+            ->willReturnCallback(static function (array $args, int $timeout) use ($ffmpegAvailable, $ffprobeAvailable, $runArrayCallback): ProcessResult {
+                // Handle 'which' command for availability check (called in constructor)
+                if ($args[0] === 'which') {
+                    $command = $args[1] ?? '';
+
+                    return match ($command) {
+                        'ffmpeg' => $ffmpegAvailable
+                            ? new ProcessResult(0, '/usr/bin/ffmpeg', '')
+                            : new ProcessResult(1, '', ''),
+                        'ffprobe' => $ffprobeAvailable
+                            ? new ProcessResult(0, '/usr/bin/ffprobe', '')
+                            : new ProcessResult(1, '', ''),
+                        default => new ProcessResult(1, '', ''),
+                    };
+                }
+
+                // Use custom callback for ffprobe/ffmpeg calls
+                if ($runArrayCallback !== null) {
+                    return $runArrayCallback($args, $timeout);
+                }
+
+                // Default: return success
+                return new ProcessResult(0, '', '');
+            })
+        ;
+
+        return new VideoThumbnailGenerator($this->tempDir, $logger, $processRunner);
     }
 
     private function recursiveDelete(string $dir): void

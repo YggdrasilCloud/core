@@ -38,7 +38,7 @@ use function unlink;
  * - If duration < 10s: use 1s
  * - Otherwise: use min(duration × 10%, 5s)
  */
-class VideoThumbnailGenerator
+final class VideoThumbnailGenerator
 {
     private const int DEFAULT_MAX_WIDTH = 300;
     private const int DEFAULT_MAX_HEIGHT = 300;
@@ -171,9 +171,8 @@ class VideoThumbnailGenerator
 
     /**
      * Check if a command is available on the system.
-     * Protected to allow override in tests.
      */
-    protected function isCommandAvailable(string $command): bool
+    private function isCommandAvailable(string $command): bool
     {
         // 1) Prefer array execution (no shell) if `which` exists in the environment
         try {
