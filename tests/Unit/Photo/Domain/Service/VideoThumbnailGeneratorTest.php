@@ -8,14 +8,12 @@ use App\Photo\Domain\Service\VideoThumbnailGenerator;
 use App\Shared\Infrastructure\Process\ProcessResult;
 use App\Shared\Infrastructure\Process\ProcessRunner;
 use InvalidArgumentException;
-use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
 
-#[CoversClass(VideoThumbnailGenerator::class)]
 final class VideoThumbnailGeneratorTest extends TestCase
 {
     private string $tempDir;
