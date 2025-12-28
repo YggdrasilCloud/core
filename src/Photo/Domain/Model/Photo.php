@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Photo\Domain\Model;
 
+use App\Photo\Domain\Event\PhotoMoved;
 use App\Photo\Domain\Event\PhotoUploaded;
 use DateTimeImmutable;
 
@@ -118,6 +119,27 @@ final class Photo
     public function takenAt(): ?DateTimeImmutable
     {
         return $this->takenAt;
+    }
+
+    /**
+     * Move this photo to a different folder.
+     *
+     * Records a PhotoMoved domain event if the folder actually changes.
+     */
+    public function moveToFolder(FolderId $newFolderId): void
+    {
+        if ($this->folderId->equals($newFolderId)) {
+            return;
+        }
+
+        $oldFolderId = $this->folderId;
+        $this->folderId = $newFolderId;
+
+        $this->recordEvent(new PhotoMoved(
+            $this->id->toString(),
+            $oldFolderId->toString(),
+            $newFolderId->toString(),
+        ));
     }
 
     /**
