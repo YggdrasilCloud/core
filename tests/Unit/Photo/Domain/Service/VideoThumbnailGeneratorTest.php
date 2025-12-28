@@ -737,7 +737,7 @@ final class VideoThumbnailGeneratorTest extends TestCase
     /**
      * Creates a VideoThumbnailGenerator with a pre-configured ProcessRunner mock.
      *
-     * @param null|callable $runArrayCallback Custom callback for runArray method (receives args, timeout)
+     * @param null|callable(array<int, string>, int): ProcessResult $runArrayCallback Custom callback for runArray method
      */
     private function createGenerator(
         ?callable $runArrayCallback = null,
@@ -750,7 +750,7 @@ final class VideoThumbnailGeneratorTest extends TestCase
     /**
      * Creates a VideoThumbnailGenerator with a custom logger.
      *
-     * @param null|callable $runArrayCallback Custom callback for runArray method
+     * @param null|callable(array<int, string>, int): ProcessResult $runArrayCallback Custom callback for runArray method
      */
     private function createGeneratorWithLogger(
         LoggerInterface $logger,
@@ -758,7 +758,7 @@ final class VideoThumbnailGeneratorTest extends TestCase
         bool $ffmpegAvailable = true,
         bool $ffprobeAvailable = true,
     ): VideoThumbnailGenerator {
-        /** @phpstan-ignore method.unresolvableReturnType (BypassFinals allows mocking final classes) */
+        /** @phpstan-ignore-next-line BypassFinals allows mocking final classes */
         $processRunner = $this->createMock(ProcessRunner::class);
 
         // Configure runArray to handle both availability checks and actual commands
