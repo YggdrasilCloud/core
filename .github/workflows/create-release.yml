@@ -110,7 +110,7 @@ jobs:
           event-type: test-core-release
           client-payload: |
             {
-              "core_ref": "main",
+              "core_ref": "${{ github.ref_name }}",
               "core_sha": "${{ github.sha }}",
               "frontend_ref": "${{ needs.resolve-frontend-version.outputs.frontend_version }}",
               "triggered_by": "core",
