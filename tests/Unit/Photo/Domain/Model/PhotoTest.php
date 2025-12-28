@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Photo\Domain\Model;
 
+use App\Photo\Domain\Event\PhotoMoved;
 use App\Photo\Domain\Event\PhotoUploaded;
 use App\Photo\Domain\Model\FileName;
 use App\Photo\Domain\Model\FolderId;
@@ -97,5 +98,63 @@ final class PhotoTest extends TestCase
 
         self::assertGreaterThanOrEqual($before->getTimestamp(), $photo->uploadedAt()->getTimestamp());
         self::assertLessThanOrEqual($after->getTimestamp(), $photo->uploadedAt()->getTimestamp());
+    }
+
+    public function testMoveToFolderChangesFolder(): void
+    {
+        $originalFolderId = FolderId::fromString('0199d0b2-31cf-72ef-b43c-7d5563a01cdf');
+        $newFolderId = FolderId::fromString('0199d0b2-31cf-72ef-b43c-7d5563a01ce0');
+
+        $photo = $this->createPhoto($originalFolderId);
+        $photo->pullDomainEvents(); // Clear upload event
+
+        $photo->moveToFolder($newFolderId);
+
+        self::assertTrue($photo->folderId()->equals($newFolderId));
+    }
+
+    public function testMoveToFolderRecordsPhotoMovedEvent(): void
+    {
+        $originalFolderId = FolderId::fromString('0199d0b2-31cf-72ef-b43c-7d5563a01cdf');
+        $newFolderId = FolderId::fromString('0199d0b2-31cf-72ef-b43c-7d5563a01ce0');
+
+        $photo = $this->createPhoto($originalFolderId);
+        $photo->pullDomainEvents(); // Clear upload event
+
+        $photo->moveToFolder($newFolderId);
+        $events = $photo->pullDomainEvents();
+
+        self::assertCount(1, $events);
+        self::assertInstanceOf(PhotoMoved::class, $events[0]);
+        self::assertSame($originalFolderId->toString(), $events[0]->fromFolderId);
+        self::assertSame($newFolderId->toString(), $events[0]->toFolderId);
+    }
+
+    public function testMoveToSameFolderDoesNothing(): void
+    {
+        $folderId = FolderId::fromString('0199d0b2-31cf-72ef-b43c-7d5563a01cdf');
+
+        $photo = $this->createPhoto($folderId);
+        $photo->pullDomainEvents(); // Clear upload event
+
+        $photo->moveToFolder($folderId);
+        $events = $photo->pullDomainEvents();
+
+        self::assertTrue($photo->folderId()->equals($folderId));
+        self::assertCount(0, $events);
+    }
+
+    private function createPhoto(FolderId $folderId): Photo
+    {
+        return Photo::upload(
+            PhotoId::generate(),
+            $folderId,
+            UserId::fromString('550e8400-e29b-41d4-a716-446655440000'),
+            FileName::fromString('photo.jpg'),
+            'photos/folder-id/photo-id',
+            'local',
+            'image/jpeg',
+            1024
+        );
     }
 }
