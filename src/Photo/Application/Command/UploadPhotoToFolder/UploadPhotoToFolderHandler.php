@@ -57,7 +57,7 @@ final readonly class UploadPhotoToFolderHandler
         );
 
         // Generate the thumbnail (handles both local and remote storage)
-        $thumbnailKey = $this->thumbnailService->generateThumbnail($storedObject);
+        $thumbnailKey = $this->thumbnailService->generateThumbnail($storedObject, $command->mimeType);
 
         // Create the Photo entity
         $photo = Photo::upload(

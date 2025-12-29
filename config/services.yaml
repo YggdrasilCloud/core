@@ -49,23 +49,23 @@ services:
     # GetPhotoFileHandler now uses FileStorageInterface
     # which is automatically injected by Symfony's autowiring
 
-    # Photo Bounded Context - Thumbnail generator (Domain service for local filesystem)
-    App\Photo\Domain\Service\ThumbnailGenerator:
-        arguments:
-            $storagePath: '%kernel.project_dir%/var/storage'
-
-    # Photo Bounded Context - Video thumbnail generator
-    App\Photo\Domain\Service\VideoThumbnailGenerator:
-        arguments:
-            $storagePath: '%kernel.project_dir%/var/storage'
-
     # Shared Infrastructure - Process runner for external commands
     App\Shared\Infrastructure\Process\ProcessRunner: ~
+
+    # Photo Bounded Context - Thumbnail strategies (Strategy pattern)
+    # Each strategy handles a specific media type (images, videos, PDFs, etc.)
+    App\Photo\Domain\Service\ThumbnailStrategy\ImageThumbnailStrategy:
+        tags: ['thumbnail.strategy']
+
+    App\Photo\Domain\Service\ThumbnailStrategy\VideoThumbnailStrategy:
+        tags: ['thumbnail.strategy']
 
     # Photo Bounded Context - Thumbnail service (Application service for any storage)
     App\Photo\Application\Service\ThumbnailService:
         arguments:
+            $strategies: !tagged_iterator thumbnail.strategy
             $tempDir: '%kernel.project_dir%/var/cache/thumbnails'
+            $storagePath: '%kernel.project_dir%/var/storage'
 
     App\Photo\Application\Port\ThumbnailServiceInterface:
         alias: App\Photo\Application\Service\ThumbnailService

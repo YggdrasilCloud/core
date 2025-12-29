@@ -8,53 +8,89 @@ use App\File\Domain\Model\StoredObject;
 use App\File\Domain\Port\FileStorageInterface;
 use App\Photo\Application\Port\ThumbnailServiceInterface;
 use App\Photo\Domain\Model\PathInfo;
-use App\Photo\Domain\Service\ThumbnailGenerator;
+use App\Photo\Domain\Service\ThumbnailStrategy\ThumbnailGeneratorStrategyInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
+use function bin2hex;
 use function fclose;
+use function file_exists;
+use function filesize;
 use function fopen;
+use function is_dir;
+use function mkdir;
+use function random_bytes;
+use function stream_copy_to_stream;
+use function unlink;
 
 /**
  * Application service for thumbnail generation.
  *
  * Orchestrates thumbnail generation across different storage adapters:
- * - For local storage: direct filesystem access via ThumbnailGenerator
+ * - For local storage: direct filesystem access
  * - For remote storage (S3): download → generate → upload
+ *
+ * Uses the Strategy pattern for extensibility (images, videos, PDFs, etc.)
  */
 final readonly class ThumbnailService implements ThumbnailServiceInterface
 {
-    private const LOCAL_ADAPTER = 'local';
-    private const DEFAULT_THUMBNAIL_WIDTH = 300;
-    private const DEFAULT_THUMBNAIL_HEIGHT = 300;
-    private const JPEG_QUALITY = 85;
+    private const string LOCAL_ADAPTER = 'local';
+    private const int DEFAULT_THUMBNAIL_WIDTH = 300;
+    private const int DEFAULT_THUMBNAIL_HEIGHT = 300;
 
+    /**
+     * @param iterable<ThumbnailGeneratorStrategyInterface> $strategies
+     */
     public function __construct(
-        private ThumbnailGenerator $thumbnailGenerator,
+        private iterable $strategies,
         private FileStorageInterface $fileStorage,
         private LoggerInterface $logger,
         private string $tempDir,
+        private string $storagePath,
     ) {}
 
     /**
      * Generate a thumbnail for a stored file.
      *
      * @param StoredObject $storedObject The original file metadata
+     * @param string       $mimeType     The MIME type of the original file
      *
      * @return null|string The storage key of the generated thumbnail, or null if generation failed
      */
-    public function generateThumbnail(StoredObject $storedObject): ?string
+    public function generateThumbnail(StoredObject $storedObject, string $mimeType): ?string
     {
         try {
-            if ($storedObject->adapter === self::LOCAL_ADAPTER) {
-                return $this->thumbnailGenerator->generateThumbnail($storedObject->key);
+            $strategy = $this->findStrategy($mimeType);
+
+            if ($strategy === null) {
+                $this->logger->debug('No thumbnail strategy found for MIME type', [
+                    'mimeType' => $mimeType,
+                    'key' => $storedObject->key,
+                ]);
+
+                return null;
             }
 
-            return $this->generateForRemoteStorage($storedObject);
+            if (!$strategy->isAvailable()) {
+                $this->logger->warning('Thumbnail strategy not available (missing tools)', [
+                    'strategy' => $strategy::class,
+                    'mimeType' => $mimeType,
+                    'key' => $storedObject->key,
+                ]);
+
+                return null;
+            }
+
+            if ($storedObject->adapter === self::LOCAL_ADAPTER) {
+                return $this->generateForLocalStorage($storedObject, $strategy);
+            }
+
+            return $this->generateForRemoteStorage($storedObject, $strategy);
         } catch (RuntimeException $e) {
             $this->logger->warning('Thumbnail generation failed', [
                 'key' => $storedObject->key,
                 'adapter' => $storedObject->adapter,
+                'mimeType' => $mimeType,
                 'error' => $e->getMessage(),
             ]);
 
@@ -62,20 +98,71 @@ final readonly class ThumbnailService implements ThumbnailServiceInterface
         }
     }
 
+    private function findStrategy(string $mimeType): ?ThumbnailGeneratorStrategyInterface
+    {
+        foreach ($this->strategies as $strategy) {
+            if ($strategy->supports($mimeType)) {
+                return $strategy;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Generate thumbnail for local storage (direct filesystem access).
+     */
+    private function generateForLocalStorage(
+        StoredObject $storedObject,
+        ThumbnailGeneratorStrategyInterface $strategy,
+    ): string {
+        $absolutePath = $this->storagePath.'/'.$storedObject->key;
+
+        if (!file_exists($absolutePath)) {
+            throw new RuntimeException('Source file not found: '.$absolutePath);
+        }
+
+        $thumbnailRelativePath = $this->buildThumbnailKey($storedObject->key);
+        $thumbnailAbsolutePath = $this->storagePath.'/'.$thumbnailRelativePath;
+
+        // Ensure thumbnail directory exists
+        $thumbnailDir = dirname($thumbnailAbsolutePath);
+        if (!is_dir($thumbnailDir) && !mkdir($thumbnailDir, 0755, true) && !is_dir($thumbnailDir)) {
+            throw new RuntimeException('Failed to create thumbnail directory');
+        }
+
+        $strategy->generate(
+            $absolutePath,
+            $thumbnailAbsolutePath,
+            self::DEFAULT_THUMBNAIL_WIDTH,
+            self::DEFAULT_THUMBNAIL_HEIGHT,
+        );
+
+        $this->logger->info('Thumbnail generated for local storage', [
+            'originalKey' => $storedObject->key,
+            'thumbnailKey' => $thumbnailRelativePath,
+        ]);
+
+        return $thumbnailRelativePath;
+    }
+
     /**
      * Generate thumbnail for remote storage (S3, MinIO, etc.).
      *
      * Flow:
      * 1. Download original from remote storage to temp file
-     * 2. Generate thumbnail locally using vips/GD
+     * 2. Generate thumbnail locally using the appropriate strategy
      * 3. Upload thumbnail to remote storage
      * 4. Clean up temp files
      */
-    private function generateForRemoteStorage(StoredObject $storedObject): string
-    {
+    private function generateForRemoteStorage(
+        StoredObject $storedObject,
+        ThumbnailGeneratorStrategyInterface $strategy,
+    ): string {
         $this->logger->debug('Generating thumbnail for remote storage', [
             'key' => $storedObject->key,
             'adapter' => $storedObject->adapter,
+            'strategy' => $strategy::class,
         ]);
 
         // Ensure temp directory exists
@@ -83,9 +170,12 @@ final readonly class ThumbnailService implements ThumbnailServiceInterface
             throw new RuntimeException('Failed to create temp directory: '.$this->tempDir);
         }
 
-        // Download original to temp file
+        // Download original to temp file with appropriate extension
         $originalStream = $this->fileStorage->readStream($storedObject->key);
-        $tempOriginalPath = $this->tempDir.'/ygg_orig_'.bin2hex(random_bytes(16)).'.tmp';
+        $pathInfo = PathInfo::fromPath($storedObject->key);
+        $extension = $pathInfo->getExtension() !== '' ? '.'.$pathInfo->getExtension() : '.tmp';
+        $tempOriginalPath = $this->tempDir.'/ygg_orig_'.bin2hex(random_bytes(16)).$extension;
+        $tempThumbnailPath = $this->tempDir.'/ygg_thumb_'.bin2hex(random_bytes(16)).'.jpg';
 
         try {
             $tempFile = fopen($tempOriginalPath, 'w');
@@ -97,146 +187,54 @@ final readonly class ThumbnailService implements ThumbnailServiceInterface
             fclose($tempFile);
             fclose($originalStream);
 
-            // Generate thumbnail using vips/GD
-            $tempThumbnailPath = $this->generateThumbnailFromTempFile($tempOriginalPath, $storedObject->key);
+            // Generate thumbnail using the strategy
+            $strategy->generate(
+                $tempOriginalPath,
+                $tempThumbnailPath,
+                self::DEFAULT_THUMBNAIL_WIDTH,
+                self::DEFAULT_THUMBNAIL_HEIGHT,
+            );
+
+            // Build the thumbnail storage key
+            $thumbnailKey = $this->buildThumbnailKey($storedObject->key);
+
+            // Upload thumbnail to remote storage
+            $thumbnailStream = fopen($tempThumbnailPath, 'r');
+            if ($thumbnailStream === false) {
+                throw new RuntimeException('Failed to open generated thumbnail');
+            }
 
             try {
-                // Build the thumbnail storage key
-                $thumbnailKey = $this->buildThumbnailKey($storedObject->key);
-
-                // Upload thumbnail to remote storage
-                $thumbnailStream = fopen($tempThumbnailPath, 'r');
-                if ($thumbnailStream === false) {
-                    throw new RuntimeException('Failed to open generated thumbnail');
+                $thumbnailSize = filesize($tempThumbnailPath);
+                if ($thumbnailSize === false) {
+                    $thumbnailSize = 0;
                 }
 
-                try {
-                    $thumbnailSize = filesize($tempThumbnailPath);
-                    if ($thumbnailSize === false) {
-                        $thumbnailSize = 0;
-                    }
-
-                    $this->fileStorage->save(
-                        $thumbnailStream,
-                        $thumbnailKey,
-                        'image/jpeg',
-                        $thumbnailSize
-                    );
-                } finally {
-                    fclose($thumbnailStream);
-                }
-
-                $this->logger->info('Thumbnail uploaded to remote storage', [
-                    'originalKey' => $storedObject->key,
-                    'thumbnailKey' => $thumbnailKey,
-                ]);
-
-                return $thumbnailKey;
+                $this->fileStorage->save(
+                    $thumbnailStream,
+                    $thumbnailKey,
+                    'image/jpeg',
+                    $thumbnailSize
+                );
             } finally {
-                // Clean up temp thumbnail
-                if (file_exists($tempThumbnailPath)) {
-                    unlink($tempThumbnailPath);
-                }
+                fclose($thumbnailStream);
             }
+
+            $this->logger->info('Thumbnail uploaded to remote storage', [
+                'originalKey' => $storedObject->key,
+                'thumbnailKey' => $thumbnailKey,
+            ]);
+
+            return $thumbnailKey;
         } finally {
-            // Clean up temp original
+            // Clean up temp files
             if (file_exists($tempOriginalPath)) {
                 unlink($tempOriginalPath);
             }
+            if (file_exists($tempThumbnailPath)) {
+                unlink($tempThumbnailPath);
+            }
         }
-    }
-
-    /**
-     * Generate thumbnail from a temporary file path.
-     *
-     * @return string Path to the generated thumbnail
-     */
-    private function generateThumbnailFromTempFile(string $sourcePath, string $originalKey): string
-    {
-        $pathInfo = PathInfo::fromPath($originalKey);
-        $thumbnailPath = $this->tempDir.'/'.$pathInfo->getFilename().'_thumb.jpg';
-
-        // Use vipsthumbnail if available, otherwise GD
-        if ($this->isVipsAvailable()) {
-            $this->generateWithVips($sourcePath, $thumbnailPath);
-        } else {
-            $this->generateWithGd($sourcePath, $thumbnailPath);
-        }
-
-        return $thumbnailPath;
-    }
-
-    private function isVipsAvailable(): bool
-    {
-        $output = [];
-        $returnCode = 0;
-        exec('command -v vipsthumbnail 2>/dev/null', $output, $returnCode);
-
-        return $returnCode === 0 && !empty($output);
-    }
-
-    private function generateWithVips(string $sourcePath, string $outputPath, int $maxWidth = self::DEFAULT_THUMBNAIL_WIDTH, int $maxHeight = self::DEFAULT_THUMBNAIL_HEIGHT): void
-    {
-        $command = sprintf(
-            'vipsthumbnail %s -s %dx%d -o %s 2>&1',
-            escapeshellarg($sourcePath),
-            $maxWidth,
-            $maxHeight,
-            escapeshellarg($outputPath.'[Q='.self::JPEG_QUALITY.']')
-        );
-
-        $output = [];
-        $returnCode = 0;
-        exec($command, $output, $returnCode);
-
-        if ($returnCode !== 0 || !file_exists($outputPath)) {
-            throw new RuntimeException('vipsthumbnail failed: '.implode("\n", $output));
-        }
-    }
-
-    private function generateWithGd(string $sourcePath, string $outputPath, int $maxWidth = self::DEFAULT_THUMBNAIL_WIDTH, int $maxHeight = self::DEFAULT_THUMBNAIL_HEIGHT): void
-    {
-        $imageInfo = getimagesize($sourcePath);
-        if ($imageInfo === false) {
-            throw new RuntimeException('Cannot read image info from: '.$sourcePath);
-        }
-
-        [$width, $height, $type] = $imageInfo;
-
-        $source = match ($type) {
-            IMAGETYPE_JPEG => imagecreatefromjpeg($sourcePath),
-            IMAGETYPE_PNG => imagecreatefrompng($sourcePath),
-            IMAGETYPE_GIF => imagecreatefromgif($sourcePath),
-            IMAGETYPE_WEBP => imagecreatefromwebp($sourcePath),
-            default => throw new RuntimeException('Unsupported image type: '.$type),
-        };
-
-        if ($source === false) {
-            throw new RuntimeException('Failed to load image: '.$sourcePath);
-        }
-
-        // Calculate new dimensions maintaining aspect ratio
-        $ratio = min($maxWidth / $width, $maxHeight / $height);
-        $newWidth = max(1, (int) ($width * $ratio));
-        $newHeight = max(1, (int) ($height * $ratio));
-
-        $thumbnail = imagecreatetruecolor($newWidth, $newHeight);
-        if ($thumbnail === false) {
-            imagedestroy($source);
-
-            throw new RuntimeException('Failed to create thumbnail canvas');
-        }
-
-        imagecopyresampled($thumbnail, $source, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
-        imagedestroy($source);
-
-        if (!imagejpeg($thumbnail, $outputPath, self::JPEG_QUALITY)) {
-            imagedestroy($thumbnail);
-
-            throw new RuntimeException('Failed to save thumbnail');
-        }
-
-        imagedestroy($thumbnail);
     }
 
     /**
