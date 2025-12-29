@@ -116,7 +116,7 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
         $this->thumbnailService
             ->expects(self::once())
             ->method('generateThumbnail')
-            ->with($storedObject)
+            ->with($storedObject, $command->mimeType)
             ->willReturn($thumbnailKey)
         ;
 
@@ -177,7 +177,7 @@ final class UploadPhotoToFolderHandlerTest extends TestCase
         $this->thumbnailService
             ->expects(self::once())
             ->method('generateThumbnail')
-            ->with($storedObject)
+            ->with($storedObject, $command->mimeType)
             ->willReturn(null)
         ;
 
