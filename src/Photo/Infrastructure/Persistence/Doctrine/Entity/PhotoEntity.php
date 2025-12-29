@@ -82,6 +82,11 @@ class PhotoEntity
         return $this->folderId;
     }
 
+    public function setFolderId(string $folderId): void
+    {
+        $this->folderId = $folderId;
+    }
+
     public function getOwnerId(): string
     {
         return $this->ownerId;

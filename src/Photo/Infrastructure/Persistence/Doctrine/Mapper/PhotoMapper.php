@@ -31,6 +31,17 @@ final class PhotoMapper
         );
     }
 
+    /**
+     * Update an existing entity from a domain model.
+     *
+     * Only updates mutable fields (folderId for now).
+     * Immutable fields (id, storageKey, etc.) are not updated.
+     */
+    public static function updateEntity(PhotoEntity $entity, Photo $photo): void
+    {
+        $entity->setFolderId($photo->folderId()->toString());
+    }
+
     public static function toDomain(PhotoEntity $entity): Photo
     {
         $reflection = new ReflectionClass(Photo::class);

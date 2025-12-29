@@ -25,12 +25,13 @@ final readonly class DoctrinePhotoRepository implements PhotoRepositoryInterface
         $entity = $this->entityManager->find(PhotoEntity::class, $photo->id()->toString());
 
         if ($entity === null) {
-            // Nouvelle photo
+            // New photo
             $entity = PhotoMapper::toEntity($photo);
             $this->entityManager->persist($entity);
+        } else {
+            // Update existing photo (e.g., folder change for move operation)
+            PhotoMapper::updateEntity($entity, $photo);
         }
-        // NOTE: No update path for existing photos. Photos are immutable after upload.
-        // Future: add rename/move commands if needed.
 
         $this->entityManager->flush();
     }
