@@ -4,18 +4,14 @@ declare(strict_types=1);
 
 namespace App\Photo\Domain\Service\ThumbnailStrategy;
 
+use App\Shared\Infrastructure\Process\ProcessRunner;
 use RuntimeException;
 
-use function escapeshellarg;
-use function exec;
 use function file_exists;
-use function implode;
 use function in_array;
 use function is_array;
 use function is_numeric;
-use function json_decode;
 use function min;
-use function sprintf;
 
 /**
  * Thumbnail generation strategy for videos.
@@ -29,6 +25,8 @@ use function sprintf;
 final class VideoThumbnailStrategy implements ThumbnailGeneratorStrategyInterface
 {
     private const int JPEG_QUALITY = 2; // FFmpeg quality scale 2-31, lower is better
+    private const int FFMPEG_TIMEOUT_SECONDS = 60;
+    private const int FFPROBE_TIMEOUT_SECONDS = 10;
 
     /** @var string[] */
     private const array SUPPORTED_MIME_TYPES = [
@@ -46,8 +44,9 @@ final class VideoThumbnailStrategy implements ThumbnailGeneratorStrategyInterfac
     private bool $ffmpegAvailable;
     private bool $ffprobeAvailable;
 
-    public function __construct()
-    {
+    public function __construct(
+        private readonly ProcessRunner $processRunner,
+    ) {
         $this->ffmpegAvailable = $this->detectCommandAvailability('ffmpeg');
         $this->ffprobeAvailable = $this->detectCommandAvailability('ffprobe');
     }
@@ -81,33 +80,36 @@ final class VideoThumbnailStrategy implements ThumbnailGeneratorStrategyInterfac
         // -an -sn: ignore audio and subtitle streams
         // -frames:v 1: extract only 1 frame
         // -vf scale: resize maintaining aspect ratio
+        //     out_range=pc: use full range (0-255) for JPEG
+        //     format=yuv420p: ensure compatibility
         // -q:v: JPEG quality (2=best, 31=worst)
-        $command = sprintf(
-            'ffmpeg -nostdin -hide_banner -loglevel error -ss %.3f -i %s -an -sn -frames:v 1 -vf "scale=%d:%d:force_original_aspect_ratio=decrease" -q:v %d -y %s 2>&1',
-            $timestamp,
-            escapeshellarg($sourcePath),
-            $maxWidth,
-            $maxHeight,
-            self::JPEG_QUALITY,
-            escapeshellarg($outputPath)
-        );
+        $result = $this->processRunner->runArray([
+            'ffmpeg',
+            '-nostdin',
+            '-hide_banner',
+            '-loglevel', 'error',
+            '-ss', (string) $timestamp,
+            '-i', $sourcePath,
+            '-an',
+            '-sn',
+            '-frames:v', '1',
+            '-vf', "scale={$maxWidth}:{$maxHeight}:force_original_aspect_ratio=decrease,format=yuv420p",
+            '-color_range', 'pc',
+            '-q:v', (string) self::JPEG_QUALITY,
+            '-y',
+            $outputPath,
+        ], self::FFMPEG_TIMEOUT_SECONDS);
 
-        $output = [];
-        $returnCode = 0;
-        exec($command, $output, $returnCode);
-
-        if ($returnCode !== 0 || !file_exists($outputPath)) {
-            throw new RuntimeException('FFmpeg failed to generate video thumbnail: '.implode("\n", $output));
+        if (!$result->isSuccessful() || !file_exists($outputPath)) {
+            throw new RuntimeException('FFmpeg failed to generate video thumbnail: '.$result->getOutput());
         }
     }
 
     private function detectCommandAvailability(string $command): bool
     {
-        $output = [];
-        $returnCode = 0;
-        exec('command -v '.escapeshellarg($command).' 2>/dev/null', $output, $returnCode);
+        $result = $this->processRunner->runArray(['command', '-v', $command]);
 
-        return $returnCode === 0 && !empty($output);
+        return $result->isSuccessful() && $result->stdout !== '';
     }
 
     /**
@@ -124,18 +126,19 @@ final class VideoThumbnailStrategy implements ThumbnailGeneratorStrategyInterfac
             return 1.0;
         }
 
-        $output = [];
-        $returnCode = 0;
-        exec(sprintf(
-            'ffprobe -v error -print_format json -show_entries format=duration %s 2>/dev/null',
-            escapeshellarg($videoPath)
-        ), $output, $returnCode);
+        $result = $this->processRunner->runArray([
+            'ffprobe',
+            '-v', 'error',
+            '-print_format', 'json',
+            '-show_entries', 'format=duration',
+            $videoPath,
+        ], self::FFPROBE_TIMEOUT_SECONDS);
 
-        if ($returnCode !== 0 || empty($output)) {
+        if (!$result->isSuccessful() || $result->stdout === '') {
             return 1.0;
         }
 
-        $data = json_decode(implode('', $output), true);
+        $data = json_decode($result->stdout, true);
         if (!is_array($data)) {
             return 1.0;
         }
