@@ -173,7 +173,7 @@ final readonly class ThumbnailService implements ThumbnailServiceInterface
         // Download original to temp file with appropriate extension
         $originalStream = $this->fileStorage->readStream($storedObject->key);
         $pathInfo = PathInfo::fromPath($storedObject->key);
-        $extension = $pathInfo->getExtension() !== '' ? '.'.$pathInfo->getExtension() : '.tmp';
+        $extension = $pathInfo->getExtension() !== null ? '.'.$pathInfo->getExtension() : '.tmp';
         $tempOriginalPath = $this->tempDir.'/ygg_orig_'.bin2hex(random_bytes(16)).$extension;
         $tempThumbnailPath = $this->tempDir.'/ygg_thumb_'.bin2hex(random_bytes(16)).'.jpg';
 
