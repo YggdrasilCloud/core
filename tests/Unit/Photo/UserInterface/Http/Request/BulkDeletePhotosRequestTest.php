@@ -68,7 +68,7 @@ final class BulkDeletePhotosRequestTest extends TestCase
     {
         $photoIds = [];
         for ($i = 0; $i < 101; ++$i) {
-            $photoIds[] = sprintf('550e8400-e29b-41d4-a716-4466554400%02d', $i % 100);
+            $photoIds[] = sprintf('550e8400-e29b-41d4-a716-44665544%04d', $i);
         }
 
         $request = $this->createRequest(['photoIds' => $photoIds]);
