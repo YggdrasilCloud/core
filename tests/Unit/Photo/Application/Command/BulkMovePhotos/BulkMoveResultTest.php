@@ -63,6 +63,13 @@ final class BulkMoveResultTest extends TestCase
         self::assertFalse($result->allFailed());
     }
 
+    public function testAllFailedReturnsFalseWhenEmpty(): void
+    {
+        $result = new BulkMoveResult([], []);
+
+        self::assertFalse($result->allFailed());
+    }
+
     public function testAllSucceededReturnsTrueWhenAllSucceeded(): void
     {
         $result = new BulkMoveResult(['id1', 'id2'], []);
@@ -76,6 +83,13 @@ final class BulkMoveResultTest extends TestCase
             ['id1'],
             [new BulkOperationFailure('id2', 'error')]
         );
+
+        self::assertFalse($result->allSucceeded());
+    }
+
+    public function testAllSucceededReturnsFalseWhenEmpty(): void
+    {
+        $result = new BulkMoveResult([], []);
 
         self::assertFalse($result->allSucceeded());
     }

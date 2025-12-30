@@ -95,7 +95,7 @@ final class BulkMovePhotosRequestTest extends TestCase
     {
         $photoIds = [];
         for ($i = 0; $i < 101; ++$i) {
-            $photoIds[] = sprintf('550e8400-e29b-41d4-a716-4466554400%02d', $i % 100);
+            $photoIds[] = sprintf('550e8400-e29b-41d4-a716-44665544%04d', $i);
         }
 
         $request = $this->createRequest([
@@ -105,6 +105,54 @@ final class BulkMovePhotosRequestTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Cannot process more than 100 photos at once');
+
+        BulkMovePhotosRequest::fromRequest($request);
+    }
+
+    public function testFromRequestThrowsOnInvalidJson(): void
+    {
+        $request = Request::create('/api/photos/bulk-move', 'PATCH', [], [], [], [], 'not json');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid JSON');
+
+        BulkMovePhotosRequest::fromRequest($request);
+    }
+
+    public function testFromRequestThrowsOnMissingPhotoIds(): void
+    {
+        $request = $this->createRequest([
+            'targetFolderId' => '550e8400-e29b-41d4-a716-446655440010',
+        ]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Field "photoIds" must be an array');
+
+        BulkMovePhotosRequest::fromRequest($request);
+    }
+
+    public function testFromRequestThrowsOnInvalidPhotoIdFormat(): void
+    {
+        $request = $this->createRequest([
+            'photoIds' => ['not-a-uuid'],
+            'targetFolderId' => '550e8400-e29b-41d4-a716-446655440010',
+        ]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid photo ID format');
+
+        BulkMovePhotosRequest::fromRequest($request);
+    }
+
+    public function testFromRequestThrowsOnNonStringPhotoId(): void
+    {
+        $request = $this->createRequest([
+            'photoIds' => [123],
+            'targetFolderId' => '550e8400-e29b-41d4-a716-446655440010',
+        ]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('must be a string');
 
         BulkMovePhotosRequest::fromRequest($request);
     }
