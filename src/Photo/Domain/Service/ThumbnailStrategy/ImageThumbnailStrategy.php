@@ -7,6 +7,7 @@ namespace App\Photo\Domain\Service\ThumbnailStrategy;
 use App\Shared\Infrastructure\Process\ProcessRunner;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 use function file_exists;
 use function getimagesize;
@@ -49,7 +50,14 @@ final class ImageThumbnailStrategy implements ThumbnailGeneratorStrategyInterfac
         private readonly ProcessRunner $processRunner,
         private readonly LoggerInterface $logger,
     ) {
-        $this->vipsAvailable = $this->detectVipsAvailability();
+        try {
+            $this->vipsAvailable = $this->detectCommandAvailability('vipsthumbnail');
+        } catch (Throwable $e) {
+            $this->vipsAvailable = false;
+            $this->logger->warning('Failed to detect vipsthumbnail availability, falling back to GD', [
+                'exception' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function supports(string $mimeType): bool
@@ -76,9 +84,12 @@ final class ImageThumbnailStrategy implements ThumbnailGeneratorStrategyInterfac
         }
     }
 
-    private function detectVipsAvailability(): bool
+    /**
+     * Detect if a command is available using 'which' (POSIX portable).
+     */
+    private function detectCommandAvailability(string $command): bool
     {
-        $result = $this->processRunner->runArray(['command', '-v', 'vipsthumbnail']);
+        $result = $this->processRunner->runArray(['which', $command]);
 
         return $result->isSuccessful() && $result->stdout !== '';
     }
