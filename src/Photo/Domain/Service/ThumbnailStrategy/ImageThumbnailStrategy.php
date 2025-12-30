@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Photo\Domain\Service\ThumbnailStrategy;
 
+use App\Shared\Infrastructure\Process\ProcessRunner;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 
-use function escapeshellarg;
-use function exec;
 use function file_exists;
 use function getimagesize;
+use function imagecolorallocate;
 use function imagecopyresampled;
 use function imagecreatefromgif;
 use function imagecreatefromjpeg;
@@ -17,11 +18,11 @@ use function imagecreatefrompng;
 use function imagecreatefromwebp;
 use function imagecreatetruecolor;
 use function imagedestroy;
+use function imagefill;
 use function imagejpeg;
 use function in_array;
 use function max;
 use function min;
-use function sprintf;
 
 /**
  * Thumbnail generation strategy for images.
@@ -32,6 +33,7 @@ use function sprintf;
 final class ImageThumbnailStrategy implements ThumbnailGeneratorStrategyInterface
 {
     private const int JPEG_QUALITY = 85;
+    private const int VIPS_TIMEOUT_SECONDS = 30;
 
     /** @var string[] */
     private const array SUPPORTED_MIME_TYPES = [
@@ -43,8 +45,10 @@ final class ImageThumbnailStrategy implements ThumbnailGeneratorStrategyInterfac
 
     private bool $vipsAvailable;
 
-    public function __construct()
-    {
+    public function __construct(
+        private readonly ProcessRunner $processRunner,
+        private readonly LoggerInterface $logger,
+    ) {
         $this->vipsAvailable = $this->detectVipsAvailability();
     }
 
@@ -74,11 +78,9 @@ final class ImageThumbnailStrategy implements ThumbnailGeneratorStrategyInterfac
 
     private function detectVipsAvailability(): bool
     {
-        $output = [];
-        $returnCode = 0;
-        exec('command -v vipsthumbnail 2>/dev/null', $output, $returnCode);
+        $result = $this->processRunner->runArray(['command', '-v', 'vipsthumbnail']);
 
-        return $returnCode === 0 && !empty($output);
+        return $result->isSuccessful() && $result->stdout !== '';
     }
 
     private function generateWithVips(
@@ -87,20 +89,20 @@ final class ImageThumbnailStrategy implements ThumbnailGeneratorStrategyInterfac
         int $maxWidth,
         int $maxHeight,
     ): void {
-        $command = sprintf(
-            'vipsthumbnail %s -s %dx%d -o %s 2>&1',
-            escapeshellarg($sourcePath),
-            $maxWidth,
-            $maxHeight,
-            escapeshellarg($outputPath.'[Q='.self::JPEG_QUALITY.']')
-        );
+        $result = $this->processRunner->runArray([
+            'vipsthumbnail',
+            $sourcePath,
+            '-s', $maxWidth.'x'.$maxHeight,
+            '-o', $outputPath.'[Q='.self::JPEG_QUALITY.']',
+        ], self::VIPS_TIMEOUT_SECONDS);
 
-        $output = [];
-        $returnCode = 0;
-        exec($command, $output, $returnCode);
+        if (!$result->isSuccessful() || !file_exists($outputPath)) {
+            $this->logger->warning('vipsthumbnail failed, falling back to GD', [
+                'source' => $sourcePath,
+                'exitCode' => $result->exitCode,
+                'error' => $result->stderr,
+            ]);
 
-        if ($returnCode !== 0 || !file_exists($outputPath)) {
-            // Fallback to GD if vips fails
             $this->generateWithGd($sourcePath, $outputPath, $maxWidth, $maxHeight);
         }
     }
@@ -140,6 +142,13 @@ final class ImageThumbnailStrategy implements ThumbnailGeneratorStrategyInterfac
             imagedestroy($source);
 
             throw new RuntimeException('Failed to create thumbnail canvas');
+        }
+
+        // Fill with white background for transparent images (PNG, GIF, WebP)
+        // JPEG output doesn't support transparency, so we need a solid background
+        $white = imagecolorallocate($thumbnail, 255, 255, 255);
+        if ($white !== false) {
+            imagefill($thumbnail, 0, 0, $white);
         }
 
         imagecopyresampled($thumbnail, $source, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
