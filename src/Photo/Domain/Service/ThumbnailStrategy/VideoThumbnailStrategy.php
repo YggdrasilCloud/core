@@ -5,13 +5,19 @@ declare(strict_types=1);
 namespace App\Photo\Domain\Service\ThumbnailStrategy;
 
 use App\Shared\Infrastructure\Process\ProcessRunner;
+use JsonException;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 use function file_exists;
 use function in_array;
 use function is_array;
 use function is_numeric;
+use function json_decode;
 use function min;
+
+use const JSON_THROW_ON_ERROR;
 
 /**
  * Thumbnail generation strategy for videos.
@@ -46,9 +52,18 @@ final class VideoThumbnailStrategy implements ThumbnailGeneratorStrategyInterfac
 
     public function __construct(
         private readonly ProcessRunner $processRunner,
+        private readonly LoggerInterface $logger,
     ) {
-        $this->ffmpegAvailable = $this->detectCommandAvailability('ffmpeg');
-        $this->ffprobeAvailable = $this->detectCommandAvailability('ffprobe');
+        try {
+            $this->ffmpegAvailable = $this->detectCommandAvailability('ffmpeg');
+            $this->ffprobeAvailable = $this->detectCommandAvailability('ffprobe');
+        } catch (Throwable $e) {
+            $this->ffmpegAvailable = false;
+            $this->ffprobeAvailable = false;
+            $this->logger->warning('Failed to detect ffmpeg/ffprobe availability', [
+                'exception' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function supports(string $mimeType): bool
@@ -80,8 +95,8 @@ final class VideoThumbnailStrategy implements ThumbnailGeneratorStrategyInterfac
         // -an -sn: ignore audio and subtitle streams
         // -frames:v 1: extract only 1 frame
         // -vf scale: resize maintaining aspect ratio
-        //     out_range=pc: use full range (0-255) for JPEG
         //     format=yuv420p: ensure compatibility
+        // -color_range pc: use full range (0-255) for JPEG
         // -q:v: JPEG quality (2=best, 31=worst)
         $result = $this->processRunner->runArray([
             'ffmpeg',
@@ -105,9 +120,12 @@ final class VideoThumbnailStrategy implements ThumbnailGeneratorStrategyInterfac
         }
     }
 
+    /**
+     * Detect if a command is available using 'which' (POSIX portable).
+     */
     private function detectCommandAvailability(string $command): bool
     {
-        $result = $this->processRunner->runArray(['command', '-v', $command]);
+        $result = $this->processRunner->runArray(['which', $command]);
 
         return $result->isSuccessful() && $result->stdout !== '';
     }
@@ -138,7 +156,12 @@ final class VideoThumbnailStrategy implements ThumbnailGeneratorStrategyInterfac
             return 1.0;
         }
 
-        $data = json_decode($result->stdout, true);
+        try {
+            $data = json_decode($result->stdout, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return 1.0;
+        }
+
         if (!is_array($data)) {
             return 1.0;
         }
