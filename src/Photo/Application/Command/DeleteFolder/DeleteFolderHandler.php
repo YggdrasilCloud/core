@@ -7,14 +7,15 @@ namespace App\Photo\Application\Command\DeleteFolder;
 use App\File\Domain\Service\PhysicalFolderStorage;
 use App\Photo\Domain\Criteria\FolderCriteria;
 use App\Photo\Domain\Criteria\PhotoCriteria;
+use App\Photo\Domain\Exception\FolderNotEmptyException;
+use App\Photo\Domain\Exception\FolderNotFoundException;
+use App\Photo\Domain\Model\DeletedContent;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\Domain\Repository\PhotoRepositoryInterface;
 use App\Photo\Domain\Service\FileSystemPathBuilder;
-use DomainException;
+use App\Photo\Domain\Service\FolderContentDeleter;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-
-use function sprintf;
 
 /**
  * Handles folder deletion.
@@ -22,8 +23,8 @@ use function sprintf;
  * Deletes both the folder entity from the database and the physical directory
  * from the filesystem.
  *
- * BUSINESS RULE: A folder can only be deleted if it's empty (no photos, no subfolders).
- * This prevents accidental data loss and ensures users explicitly delete content first.
+ * When recursive is false (default), the folder must be empty.
+ * When recursive is true, all photos and subfolders are deleted first.
  */
 #[AsMessageHandler]
 final readonly class DeleteFolderHandler
@@ -33,34 +34,33 @@ final readonly class DeleteFolderHandler
         private PhotoRepositoryInterface $photoRepository,
         private PhysicalFolderStorage $folderStorage,
         private FileSystemPathBuilder $pathBuilder,
+        private FolderContentDeleter $contentDeleter,
     ) {}
 
-    public function __invoke(DeleteFolderCommand $command): void
+    public function __invoke(DeleteFolderCommand $command): DeletedContent
     {
         $folderId = FolderId::fromString($command->folderId);
 
         // Verify folder exists
         $folder = $this->folderRepository->findById($folderId);
         if ($folder === null) {
-            throw new DomainException(sprintf('Folder not found: %s', $command->folderId));
+            throw FolderNotFoundException::withId($folderId);
         }
 
-        // Ensure folder is empty - no photos
+        // Count content
         $photoCount = $this->photoRepository->countByFolderId($folderId, new PhotoCriteria());
-        if ($photoCount > 0) {
-            throw new DomainException(sprintf(
-                'Cannot delete folder: contains %d photo(s). Delete all photos first.',
-                $photoCount,
-            ));
+        $subfolderCount = $this->folderRepository->countByParentId($folderId, new FolderCriteria());
+        $hasContent = $photoCount > 0 || $subfolderCount > 0;
+
+        // If not recursive and has content, throw error
+        if (!$command->recursive && $hasContent) {
+            throw FolderNotEmptyException::withContent($folderId, $photoCount, $subfolderCount);
         }
 
-        // Ensure folder is empty - no subfolders
-        $subfolderCount = $this->folderRepository->countByParentId($folderId, new FolderCriteria());
-        if ($subfolderCount > 0) {
-            throw new DomainException(sprintf(
-                'Cannot delete folder: contains %d subfolder(s). Delete all subfolders first.',
-                $subfolderCount,
-            ));
+        // Delete content recursively if needed
+        $deletedContent = DeletedContent::empty();
+        if ($command->recursive && $hasContent) {
+            $deletedContent = $this->contentDeleter->deleteAllContent($folderId);
         }
 
         // Get folder path before deletion
@@ -70,7 +70,9 @@ final readonly class DeleteFolderHandler
         $this->folderRepository->remove($folder);
 
         // Remove physical directory from filesystem
-        // This will only succeed if the directory is truly empty
+        // After content deletion, the directory should be empty
         $this->folderStorage->removeEmptyDirectory($folderPath);
+
+        return $deletedContent;
     }
 }
