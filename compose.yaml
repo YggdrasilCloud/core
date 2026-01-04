@@ -17,10 +17,14 @@ services:
       XDEBUG_MODE: "off"
     volumes:
       - .:/app
+      - ../storage-s3:/storage-s3
     depends_on:
       - db
       - redis
     user: "${UID:-1000}:${GID:-1000}"
+    networks:
+      - default
+      - yggdrasil
 #    healthcheck:
 #      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ping || exit 1"]
 #      interval: 10s
@@ -47,3 +51,8 @@ services:
 
 volumes:
   pgdata:
+
+networks:
+  yggdrasil:
+    name: yggdrasil_network
+    external: true

@@ -5,6 +5,7 @@ use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Doctrine\Bundle\MigrationsBundle\DoctrineMigrationsBundle;
 use Nelmio\CorsBundle\NelmioCorsBundle;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
+use YggdrasilCloud\StorageS3\StorageS3Bundle;
 
 return [
     FrameworkBundle::class => ['all' => true],
@@ -12,4 +13,5 @@ return [
     DoctrineMigrationsBundle::class => ['all' => true],
     NelmioCorsBundle::class => ['all' => true],
     DAMADoctrineTestBundle::class => ['test' => true],
+    StorageS3Bundle::class => ['all' => true],
 ];

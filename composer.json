@@ -5,6 +5,15 @@
     "license": "proprietary",
     "minimum-stability": "stable",
     "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "path",
+            "url": "/storage-s3",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
     "require": {
         "php": "^8.4",
         "ext-ctype": "*",
@@ -28,7 +37,8 @@
         "symfony/serializer": "7.3.*",
         "symfony/uid": "7.3.*",
         "symfony/validator": "7.3.*",
-        "symfony/yaml": "7.3.*"
+        "symfony/yaml": "7.3.*",
+        "yggdrasilcloud/storage-s3": "@dev"
     },
     "config": {
         "allow-plugins": {
