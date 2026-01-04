@@ -30,16 +30,22 @@ final class FolderTest extends TestCase
 
     public function testCreateRecordsFolderCreatedEvent(): void
     {
-        $folder = Folder::create(
-            FolderId::generate(),
-            FolderName::fromString('My Photos'),
-            UserId::fromString('550e8400-e29b-41d4-a716-446655440000')
-        );
+        $folderId = FolderId::generate();
+        $folderName = FolderName::fromString('My Photos');
+        $ownerId = UserId::fromString('550e8400-e29b-41d4-a716-446655440000');
+
+        $folder = Folder::create($folderId, $folderName, $ownerId);
 
         $events = $folder->pullDomainEvents();
 
         self::assertCount(1, $events);
         self::assertInstanceOf(FolderCreated::class, $events[0]);
+
+        // Verify event contains correct data (prevents recordEvent removal mutation)
+        $event = $events[0];
+        self::assertSame($folderId->toString(), $event->folderId);
+        self::assertSame($folderName->toString(), $event->folderName);
+        self::assertSame($ownerId->toString(), $event->ownerId);
     }
 
     public function testPullDomainEventsClearsEventsList(): void
@@ -130,6 +136,38 @@ final class FolderTest extends TestCase
             FolderName::fromString('Root Folder'),
             UserId::fromString('550e8400-e29b-41d4-a716-446655440000')
         );
+
+        self::assertNull($folder->parentId());
+    }
+
+    public function testMoveFolderToNewParent(): void
+    {
+        $folder = Folder::create(
+            FolderId::generate(),
+            FolderName::fromString('My Folder'),
+            UserId::fromString('550e8400-e29b-41d4-a716-446655440000')
+        );
+
+        $newParentId = FolderId::generate();
+        $folder->move($newParentId);
+
+        self::assertNotNull($folder->parentId());
+        self::assertTrue($folder->parentId()->equals($newParentId));
+    }
+
+    public function testMoveFolderToRoot(): void
+    {
+        $originalParentId = FolderId::generate();
+        $folder = Folder::create(
+            FolderId::generate(),
+            FolderName::fromString('My Folder'),
+            UserId::fromString('550e8400-e29b-41d4-a716-446655440000'),
+            $originalParentId
+        );
+
+        self::assertNotNull($folder->parentId());
+
+        $folder->move(null);
 
         self::assertNull($folder->parentId());
     }

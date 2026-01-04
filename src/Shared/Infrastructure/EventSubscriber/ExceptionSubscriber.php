@@ -7,6 +7,7 @@ namespace App\Shared\Infrastructure\EventSubscriber;
 use App\Photo\Domain\Exception\FolderNotEmptyException;
 use App\Photo\Domain\Exception\FolderNotFoundException;
 use App\Shared\UserInterface\Http\Responder\JsonResponder;
+use InvalidArgumentException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -48,6 +49,18 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
             $response = $this->responder->notFound(
                 'Not Found',
                 $folderNotFoundException->getMessage()
+            );
+            $event->setResponse($response);
+
+            return;
+        }
+
+        // Check if it's an InvalidArgumentException (validation errors like cycle detection)
+        $invalidArgumentException = $this->findException($exception, InvalidArgumentException::class);
+        if ($invalidArgumentException !== null) {
+            $response = $this->responder->badRequest(
+                'Invalid Request',
+                $invalidArgumentException->getMessage()
             );
             $event->setResponse($response);
         }
