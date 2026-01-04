@@ -48,6 +48,16 @@ final class Folder
         $this->name = $newName;
     }
 
+    /**
+     * Move this folder to a new parent.
+     *
+     * @param null|FolderId $newParentId The new parent folder ID, or null for root
+     */
+    public function move(?FolderId $newParentId): void
+    {
+        $this->parentId = $newParentId;
+    }
+
     public function id(): FolderId
     {
         return $this->id;
