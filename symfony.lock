@@ -204,5 +204,8 @@
         "files": [
             "config/packages/validator.yaml"
         ]
+    },
+    "yggdrasilcloud/storage-s3": {
+        "version": "dev-main"
     }
 }
