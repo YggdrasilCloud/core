@@ -56,5 +56,6 @@ final class FolderMapper
     public static function updateEntity(Folder $folder, FolderEntity $entity): void
     {
         $entity->setName($folder->name()->toString());
+        $entity->setParentId($folder->parentId()?->toString());
     }
 }
