@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace App\Photo\Application\Command\RenameFolder;
 
 use App\File\Domain\Service\PhysicalFolderStorage;
+use App\Photo\Domain\Exception\FolderNotFoundException;
 use App\Photo\Domain\Model\FolderId;
 use App\Photo\Domain\Model\FolderName;
 use App\Photo\Domain\Repository\FolderRepositoryInterface;
 use App\Photo\Domain\Service\FileSystemPathBuilder;
-use DomainException;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
-
-use function sprintf;
 
 /**
  * Handles folder renaming.
@@ -51,7 +49,7 @@ final readonly class RenameFolderHandler
         // Verify folder exists
         $folder = $this->folderRepository->findById($folderId);
         if ($folder === null) {
-            throw new DomainException(sprintf('Folder not found: %s', $command->folderId));
+            throw FolderNotFoundException::withId($folderId);
         }
 
         // Get old path before renaming
