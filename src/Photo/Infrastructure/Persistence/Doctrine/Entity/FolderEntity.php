@@ -66,6 +66,11 @@ class FolderEntity
         return $this->parentId;
     }
 
+    public function setParentId(?string $parentId): void
+    {
+        $this->parentId = $parentId;
+    }
+
     public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
