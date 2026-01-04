@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\EventSubscriber;
 
+use App\Photo\Domain\Exception\FolderNotEmptyException;
 use App\Photo\Domain\Exception\FolderNotFoundException;
 use App\Shared\UserInterface\Http\Responder\JsonResponder;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -29,44 +30,55 @@ final readonly class ExceptionSubscriber implements EventSubscriberInterface
     {
         $exception = $event->getThrowable();
 
-        // Check if it's directly a FolderNotFoundException
-        // or if it's wrapped in another exception (like Messenger's HandlerFailedException)
-        $folderNotFoundException = $this->findFolderNotFoundException($exception);
+        // Check if it's a FolderNotEmptyException
+        $folderNotEmptyException = $this->findException($exception, FolderNotEmptyException::class);
+        if ($folderNotEmptyException !== null) {
+            $response = $this->responder->badRequest(
+                'Folder Not Empty',
+                $folderNotEmptyException->getMessage()
+            );
+            $event->setResponse($response);
 
+            return;
+        }
+
+        // Check if it's a FolderNotFoundException
+        $folderNotFoundException = $this->findException($exception, FolderNotFoundException::class);
         if ($folderNotFoundException !== null) {
             $response = $this->responder->notFound(
                 'Not Found',
                 $folderNotFoundException->getMessage()
             );
-
             $event->setResponse($response);
         }
     }
 
-    private function findFolderNotFoundException(Throwable $exception): ?FolderNotFoundException
+    /**
+     * @template T of Throwable
+     *
+     * @param class-string<T> $exceptionClass
+     *
+     * @return null|T
+     */
+    private function findException(Throwable $exception, string $exceptionClass): ?Throwable
     {
-        if ($exception instanceof FolderNotFoundException) {
+        if ($exception instanceof $exceptionClass) {
             return $exception;
         }
 
         // Handle Symfony Messenger's HandlerFailedException which stores wrapped exceptions
         if ($exception instanceof HandlerFailedException) {
-            $found = array_find(
-                array_map(
-                    fn (Throwable $e): ?FolderNotFoundException => $this->findFolderNotFoundException($e),
-                    $exception->getWrappedExceptions()
-                ),
-                static fn (?FolderNotFoundException $result): bool => $result !== null
-            );
-
-            if ($found !== null) {
-                return $found;
+            foreach ($exception->getWrappedExceptions() as $wrapped) {
+                $found = $this->findException($wrapped, $exceptionClass);
+                if ($found !== null) {
+                    return $found;
+                }
             }
         }
 
         // Check previous exception (for other wrapped exceptions)
         if ($exception->getPrevious() !== null) {
-            return $this->findFolderNotFoundException($exception->getPrevious());
+            return $this->findException($exception->getPrevious(), $exceptionClass);
         }
 
         return null;
