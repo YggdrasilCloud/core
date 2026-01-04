@@ -10,11 +10,13 @@ namespace App\Photo\Application\Command\DeleteFolder;
  * Deletes both the folder entity from the database and the physical directory
  * from the filesystem.
  *
- * The folder must be empty (no photos, no subfolders) to be deleted.
+ * When recursive is false (default), the folder must be empty.
+ * When recursive is true, all photos and subfolders are deleted recursively.
  */
 final readonly class DeleteFolderCommand
 {
     public function __construct(
         public string $folderId,
+        public bool $recursive = false,
     ) {}
 }
