@@ -77,6 +77,27 @@ docker compose exec php bin/console doctrine:migrations:migrate -n
 
 4. The API is now available at `http://localhost:8000`
 
+## Optional Packages
+
+YggdrasilCloud uses a modular architecture. Some features are available as optional packages:
+
+### Storage S3 (AWS S3 / MinIO)
+
+For S3-compatible storage instead of local filesystem:
+
+```bash
+composer require yggdrasilcloud/storage-s3
+```
+
+Then configure your `.env`:
+```env
+STORAGE_DSN="storage://s3?bucket=my-bucket&region=eu-west-1"
+AWS_ACCESS_KEY_ID=your-key
+AWS_SECRET_ACCESS_KEY=your-secret
+```
+
+See [Storage DSN Configuration](#storage-dsn-configuration) for more details.
+
 ## API Endpoints
 
 ### Health Check
