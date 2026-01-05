@@ -34,6 +34,11 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
+      - name: Remove optional local dependencies for CI
+        run: |
+          composer config --unset repositories.0
+          composer remove yggdrasilcloud/storage-s3 --no-update --no-interaction
+
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
@@ -74,6 +79,11 @@ jobs:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
+
+      - name: Remove optional local dependencies for CI
+        run: |
+          composer config --unset repositories.0
+          composer remove yggdrasilcloud/storage-s3 --no-update --no-interaction
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
@@ -122,6 +132,11 @@ jobs:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
+
+      - name: Remove optional local dependencies for CI
+        run: |
+          composer config --unset repositories.0
+          composer remove yggdrasilcloud/storage-s3 --no-update --no-interaction
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
