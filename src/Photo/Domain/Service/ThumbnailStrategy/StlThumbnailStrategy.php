@@ -24,6 +24,12 @@ final class StlThumbnailStrategy implements ThumbnailGeneratorStrategyInterface
 {
     private const int STL_THUMB_TIMEOUT_SECONDS = 30;
 
+    /**
+     * Maximum render size for OSMesa headless rendering.
+     * Larger sizes fail silently in headless Docker environments.
+     */
+    private const int MAX_OSMESA_RENDER_SIZE = 200;
+
     /** @var string[] */
     private const array SUPPORTED_MIME_TYPES = [
         'model/stl',
@@ -81,14 +87,15 @@ final class StlThumbnailStrategy implements ThumbnailGeneratorStrategyInterface
             // stl-thumb arguments:
             // input.stl output.png: input and output files
             // -s SIZE: render size (uses max dimension)
-            // -b RRGGBBAA: background color with alpha (white opaque = FFFFFFFF)
-            $size = max($maxWidth, $maxHeight);
+            // -a none: disable antialiasing for OSMesa compatibility
+            // Note: OSMesa has size limitations in headless mode, render at smaller size
+            $renderSize = min(max($maxWidth, $maxHeight), self::MAX_OSMESA_RENDER_SIZE);
             $result = $this->processRunner->runArray([
                 'stl-thumb',
                 $sourcePath,
                 $tempPng,
-                '-s', (string) $size,
-                '-b', 'FFFFFFFF',
+                '-s', (string) $renderSize,
+                '-a', 'none',
             ], self::STL_THUMB_TIMEOUT_SECONDS);
 
             if (!$result->isSuccessful() || !file_exists($tempPng)) {
@@ -106,7 +113,7 @@ final class StlThumbnailStrategy implements ThumbnailGeneratorStrategyInterface
     }
 
     /**
-     * Convert PNG to JPEG with resizing.
+     * Convert PNG to JPEG with resizing (up or down).
      */
     private function convertPngToJpeg(string $pngPath, string $jpegPath, int $maxWidth, int $maxHeight): void
     {
@@ -118,33 +125,32 @@ final class StlThumbnailStrategy implements ThumbnailGeneratorStrategyInterface
         $width = imagesx($image);
         $height = imagesy($image);
 
-        // Calculate new dimensions maintaining aspect ratio
-        $ratio = min($maxWidth / $width, $maxHeight / $height);
-        if ($ratio < 1) {
-            $newWidth = max(1, (int) ($width * $ratio));
-            $newHeight = max(1, (int) ($height * $ratio));
+        // Calculate target dimensions (fit within max bounds)
+        $targetSize = min($maxWidth, $maxHeight);
+        $newWidth = $targetSize;
+        $newHeight = $targetSize;
 
-            $resized = imagecreatetruecolor($newWidth, $newHeight);
-            if ($resized === false) {
-                imagedestroy($image);
-
-                throw new RuntimeException('Failed to create resized image');
-            }
-
-            // Fill with white background (for transparency)
-            $white = imagecolorallocate($resized, 255, 255, 255);
-            if ($white !== false) {
-                imagefill($resized, 0, 0, $white);
-            }
-
-            imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+        // Create target image with white background
+        $resized = imagecreatetruecolor($newWidth, $newHeight);
+        if ($resized === false) {
             imagedestroy($image);
-            $image = $resized;
+
+            throw new RuntimeException('Failed to create resized image');
         }
 
-        // Save as JPEG
-        $success = imagejpeg($image, $jpegPath, 85);
+        // Fill with white background (for PNG transparency)
+        $white = imagecolorallocate($resized, 255, 255, 255);
+        if ($white !== false) {
+            imagefill($resized, 0, 0, $white);
+        }
+
+        // Copy and resize the image
+        imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
         imagedestroy($image);
+
+        // Save as JPEG
+        $success = imagejpeg($resized, $jpegPath, 85);
+        imagedestroy($resized);
 
         if (!$success) {
             throw new RuntimeException('Failed to save JPEG thumbnail');
