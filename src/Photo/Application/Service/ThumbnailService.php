@@ -11,6 +11,7 @@ use App\Photo\Domain\Model\PathInfo;
 use App\Photo\Domain\Service\ThumbnailStrategy\ThumbnailGeneratorStrategyInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 use function bin2hex;
 use function fclose;
@@ -86,7 +87,7 @@ final readonly class ThumbnailService implements ThumbnailServiceInterface
             }
 
             return $this->generateForRemoteStorage($storedObject, $strategy);
-        } catch (RuntimeException $e) {
+        } catch (Throwable $e) {
             $this->logger->warning('Thumbnail generation failed', [
                 'key' => $storedObject->key,
                 'adapter' => $storedObject->adapter,
